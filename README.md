@@ -77,7 +77,6 @@ SchoolStart is a web and mobile-based admission management system that allows pa
 
 ## Version Control
 
-- Git
 - GitHub
 
 ---
