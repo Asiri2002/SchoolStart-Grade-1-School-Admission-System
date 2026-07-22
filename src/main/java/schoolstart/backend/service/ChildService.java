@@ -3,14 +3,17 @@ package schoolstart.backend.service;
 import schoolstart.backend.dto.ChildDto;
 import schoolstart.backend.entity.ChildModel;
 import schoolstart.backend.entity.ParentModel;
+import schoolstart.backend.exception.BadRequestException;
+import schoolstart.backend.exception.ResourceNotFoundException;
 import schoolstart.backend.repository.ChildRepository;
 import schoolstart.backend.repository.ParentRepository;
+import schoolstart.backend.util.MappingUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class ChildService {
@@ -21,98 +24,43 @@ public class ChildService {
     @Autowired
     private ParentRepository parentRepository;
 
-    // Get parent by user id
     private ParentModel getParentByUserId(String userId) {
-        return parentRepository.findByUserId(userId).orElse(null);
+        return parentRepository.findByUserId(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("Parent profile not found for user: " + userId));
     }
 
-    // Add Child
     @Transactional
     public ChildDto addChild(String userId, ChildDto childDto) {
-
         ParentModel parent = getParentByUserId(userId);
 
-        if (parent == null) {
-            return null;
-        }
-
-        ChildModel child = new ChildModel();
-
-        child.setFirstName(childDto.getFirstName());
-        child.setLastName(childDto.getLastName());
-        child.setDateOfBirth(childDto.getDateOfBirth());
-        child.setGender(childDto.getGender());
-        child.setBirthCertificateNumber(childDto.getBirthCertificateNumber());
+        ChildModel child = MappingUtils.mapToChildEntity(childDto);
         child.setParentId(parent.getId());
+        child.setId(null); // Ensure a new ID is generated
 
         ChildModel savedChild = childRepository.save(child);
-
-        if (parent.getChildIds() == null) {
-            parent.setChildIds(new ArrayList<>());
-        }
 
         parent.getChildIds().add(savedChild.getId());
         parentRepository.save(parent);
 
-        ChildDto dto = new ChildDto();
-        dto.setId(savedChild.getId());
-        dto.setFirstName(savedChild.getFirstName());
-        dto.setLastName(savedChild.getLastName());
-        dto.setDateOfBirth(savedChild.getDateOfBirth());
-        dto.setGender(savedChild.getGender());
-        dto.setBirthCertificateNumber(savedChild.getBirthCertificateNumber());
-
-        return dto;
+        return MappingUtils.mapToChildDto(savedChild);
     }
 
-    // Get All Children
     public List<ChildDto> getChildren(String userId) {
-
         ParentModel parent = getParentByUserId(userId);
-
-        if (parent == null) {
-            return new ArrayList<>();
-        }
-
         List<ChildModel> children = childRepository.findByParentId(parent.getId());
-
-        List<ChildDto> childDtos = new ArrayList<>();
-
-        for (ChildModel child : children) {
-
-            ChildDto dto = new ChildDto();
-
-            dto.setId(child.getId());
-            dto.setFirstName(child.getFirstName());
-            dto.setLastName(child.getLastName());
-            dto.setDateOfBirth(child.getDateOfBirth());
-            dto.setGender(child.getGender());
-            dto.setBirthCertificateNumber(child.getBirthCertificateNumber());
-
-            childDtos.add(dto);
-        }
-
-        return childDtos;
+        return children.stream()
+                .map(MappingUtils::mapToChildDto)
+                .collect(Collectors.toList());
     }
 
-    // Update Child
     @Transactional
     public ChildDto updateChild(String userId, String childId, ChildDto childDto) {
-
         ParentModel parent = getParentByUserId(userId);
-
-        if (parent == null) {
-            return null;
-        }
-
-        ChildModel child = childRepository.findById(childId).orElse(null);
-
-        if (child == null) {
-            return null;
-        }
+        ChildModel child = childRepository.findById(childId)
+                .orElseThrow(() -> new ResourceNotFoundException("Child not found with ID: " + childId));
 
         if (!child.getParentId().equals(parent.getId())) {
-            return null;
+            throw new BadRequestException("You are not authorized to update this child's profile.");
         }
 
         child.setFirstName(childDto.getFirstName());
@@ -121,48 +69,23 @@ public class ChildService {
         child.setGender(childDto.getGender());
         child.setBirthCertificateNumber(childDto.getBirthCertificateNumber());
 
-        ChildModel updatedChild = childRepository.save(child);
-
-        ChildDto dto = new ChildDto();
-
-        dto.setId(updatedChild.getId());
-        dto.setFirstName(updatedChild.getFirstName());
-        dto.setLastName(updatedChild.getLastName());
-        dto.setDateOfBirth(updatedChild.getDateOfBirth());
-        dto.setGender(updatedChild.getGender());
-        dto.setBirthCertificateNumber(updatedChild.getBirthCertificateNumber());
-
-        return dto;
+        ChildModel updated = childRepository.save(child);
+        return MappingUtils.mapToChildDto(updated);
     }
 
-    // Delete Child
     @Transactional
-    public boolean deleteChild(String userId, String childId) {
-
+    public void deleteChild(String userId, String childId) {
         ParentModel parent = getParentByUserId(userId);
-
-        if (parent == null) {
-            return false;
-        }
-
-        ChildModel child = childRepository.findById(childId).orElse(null);
-
-        if (child == null) {
-            return false;
-        }
+        ChildModel child = childRepository.findById(childId)
+                .orElseThrow(() -> new ResourceNotFoundException("Child not found with ID: " + childId));
 
         if (!child.getParentId().equals(parent.getId())) {
-            return false;
+            throw new BadRequestException("You are not authorized to delete this child's profile.");
         }
 
         childRepository.delete(child);
 
-        if (parent.getChildIds() != null) {
-            parent.getChildIds().remove(childId);
-        }
-
+        parent.getChildIds().remove(childId);
         parentRepository.save(parent);
-
-        return true;
     }
 }

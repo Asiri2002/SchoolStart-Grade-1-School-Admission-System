@@ -2,7 +2,9 @@ package schoolstart.backend.service;
 
 import schoolstart.backend.dto.ParentProfileDto;
 import schoolstart.backend.entity.ParentModel;
+import schoolstart.backend.exception.ResourceNotFoundException;
 import schoolstart.backend.repository.ParentRepository;
+import schoolstart.backend.util.MappingUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -13,29 +15,14 @@ public class ParentService {
     private ParentRepository parentRepository;
 
     public ParentProfileDto getParentProfile(String userId) {
-
-        ParentModel parent = parentRepository.findByUserId(userId).orElse(null);
-
-        if (parent == null) {
-            return null;
-        }
-
-        ParentProfileDto dto = new ParentProfileDto();
-        dto.setFirstName(parent.getFirstName());
-        dto.setLastName(parent.getLastName());
-        dto.setPhone(parent.getPhone());
-        dto.setAddress(parent.getAddress());
-
-        return dto;
+        ParentModel parent = parentRepository.findByUserId(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("Parent profile not found for user: " + userId));
+        return MappingUtils.mapToParentProfileDto(parent);
     }
 
     public ParentProfileDto updateParentProfile(String userId, ParentProfileDto profileDto) {
-
-        ParentModel parent = parentRepository.findByUserId(userId).orElse(null);
-
-        if (parent == null) {
-            return null;
-        }
+        ParentModel parent = parentRepository.findByUserId(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("Parent profile not found for user: " + userId));
 
         parent.setFirstName(profileDto.getFirstName());
         parent.setLastName(profileDto.getLastName());
@@ -43,13 +30,6 @@ public class ParentService {
         parent.setAddress(profileDto.getAddress());
 
         ParentModel updated = parentRepository.save(parent);
-
-        ParentProfileDto dto = new ParentProfileDto();
-        dto.setFirstName(updated.getFirstName());
-        dto.setLastName(updated.getLastName());
-        dto.setPhone(updated.getPhone());
-        dto.setAddress(updated.getAddress());
-
-        return dto;
+        return MappingUtils.mapToParentProfileDto(updated);
     }
 }
