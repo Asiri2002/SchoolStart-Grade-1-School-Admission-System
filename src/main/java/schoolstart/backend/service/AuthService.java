@@ -1,12 +1,24 @@
 package schoolstart.backend.service;
 
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.stereotype.Service;
+import schoolstart.backend.dto.AuthResponse;
 import schoolstart.backend.dto.LoginRequest;
 import schoolstart.backend.dto.RegisterRequest;
+import schoolstart.backend.entity.ParentModel;
+import schoolstart.backend.entity.Role;
 import schoolstart.backend.entity.UserModel;
+import schoolstart.backend.exception.BadRequestException;
+import schoolstart.backend.repository.ParentRepository;
 import schoolstart.backend.repository.UserRepository;
+import schoolstart.backend.security.JwtTokenProvider;
+import schoolstart.backend.security.UserPrincipal;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class AuthService {
@@ -15,49 +27,70 @@ public class AuthService {
     private UserRepository userRepository;
 
     @Autowired
+    private ParentRepository parentRepository;
+
+    @Autowired
     private PasswordEncoder passwordEncoder;
 
-    // Register User
-    public String registerUser(RegisterRequest request) {
+    @Autowired
+    private AuthenticationManager authenticationManager;
 
-        if (userRepository.existsByUsername(request.getUsername())) {
-            return "Username already exists!";
+    @Autowired
+    private JwtTokenProvider tokenProvider;
+
+    @Transactional
+    public void registerUser(RegisterRequest registerRequest) {
+        if (userRepository.existsByUsername(registerRequest.getUsername())) {
+            throw new BadRequestException("Username is already taken!");
         }
 
-        if (userRepository.existsByEmail(request.getEmail())) {
-            return "Email already exists!";
+        if (userRepository.existsByEmail(registerRequest.getEmail())) {
+            throw new BadRequestException("Email Address already in use!");
         }
 
+        // Creating user's account
         UserModel user = UserModel.builder()
-                .username(request.getUsername())
-                .email(request.getEmail())
-                .password(passwordEncoder.encode(request.getPassword()))
-                .role(request.getRole())
+                .username(registerRequest.getUsername())
+                .email(registerRequest.getEmail())
+                .password(passwordEncoder.encode(registerRequest.getPassword()))
+                .role(registerRequest.getRole())
                 .enabled(true)
                 .build();
 
-        userRepository.save(user);
+        UserModel savedUser = userRepository.save(user);
 
-        return "User registered successfully!";
+        // If the registered user is a parent, create a blank Parent profile for them
+        if (registerRequest.getRole() == Role.ROLE_PARENT) {
+            ParentModel parent = ParentModel.builder()
+                    .userId(savedUser.getId())
+                    .firstName("")
+                    .lastName("")
+                    .phone("")
+                    .address("")
+                    .build();
+            parentRepository.save(parent);
+        }
     }
 
-    // Login User
-    public String loginUser(LoginRequest request) {
+    public AuthResponse authenticateUser(LoginRequest loginRequest) {
+        Authentication authentication = authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(
+                        loginRequest.getUsernameOrEmail(),
+                        loginRequest.getPassword()
+                )
+        );
 
-        UserModel user = userRepository
-                .findByUsername(request.getUsernameOrEmail())
-                .orElseGet(() ->
-                        userRepository.findByEmail(request.getUsernameOrEmail())
-                                .orElse(null));
+        SecurityContextHolder.getContext().setAuthentication(authentication);
 
-        if (user == null) {
-            return "User not found!";
-        }
+        String jwt = tokenProvider.generateToken(authentication);
+        UserPrincipal userPrincipal = (UserPrincipal) authentication.getPrincipal();
 
-        if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
-            return "Invalid password!";
-        }
-
-        return "Login successful!";
+        return AuthResponse.builder()
+                .accessToken(jwt)
+                .username(userPrincipal.getUsername())
+                .email(userPrincipal.getEmail())
+                .role(userPrincipal.getAuthorities().iterator().next().getAuthority())
+                .userId(userPrincipal.getId())
+                .build();
     }
 }

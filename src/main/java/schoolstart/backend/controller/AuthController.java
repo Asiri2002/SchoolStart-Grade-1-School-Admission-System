@@ -6,6 +6,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import schoolstart.backend.dto.AuthResponse;
 import schoolstart.backend.dto.LoginRequest;
 import schoolstart.backend.dto.RegisterRequest;
 import schoolstart.backend.service.AuthService;
@@ -19,18 +20,20 @@ public class AuthController {
     private AuthService authService;
 
     @PostMapping("/register")
-    public ResponseEntity<String> registerUser(@Valid @RequestBody RegisterRequest registerRequest) {
+    public ResponseEntity<String> registerUser(
+            @Valid @RequestBody RegisterRequest registerRequest) {
 
-        String message = authService.registerUser(registerRequest);
+        authService.registerUser(registerRequest);
 
-        return new ResponseEntity<>(message, HttpStatus.CREATED);
+        return new ResponseEntity<>("User registered successfully!", HttpStatus.CREATED);
     }
 
     @PostMapping("/login")
-    public ResponseEntity<String> loginUser(@Valid @RequestBody LoginRequest loginRequest) {
+    public ResponseEntity<AuthResponse> loginUser(
+            @Valid @RequestBody LoginRequest loginRequest) {
 
-        String message = authService.loginUser(loginRequest);
+        AuthResponse response = authService.authenticateUser(loginRequest);
 
-        return ResponseEntity.ok(message);
+        return ResponseEntity.ok(response);
     }
 }
