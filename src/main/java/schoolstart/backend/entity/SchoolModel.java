@@ -14,6 +14,7 @@ import org.springframework.data.mongodb.core.mapping.Document;
 @Builder
 @Document(collection = "schools")
 public class SchoolModel {
+
     @Id
     private String id;
 
@@ -29,8 +30,14 @@ public class SchoolModel {
 
     private String phone;
 
+    // Total student capacity
     private int capacity;
+
+    // Currently available seats
+    private int availableSeats;
+
+    // School image URL
+    private String imageUrl;
 
     private String description;
 }
-

@@ -14,6 +14,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @Builder
 public class SchoolDto {
+
     private String id;
 
     @NotBlank(message = "School name is required")
@@ -35,6 +36,12 @@ public class SchoolDto {
     @NotNull(message = "Capacity is required")
     @Min(value = 1, message = "Capacity must be at least 1")
     private Integer capacity;
+
+    @NotNull(message = "Available seats is required")
+    @Min(value = 0, message = "Available seats cannot be negative")
+    private Integer availableSeats;
+
+    private String imageUrl;
 
     private String description;
 }

@@ -27,54 +27,87 @@ public class SchoolService {
     public SchoolDto getSchoolById(String id) {
         SchoolModel school = schoolRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("School not found with ID: " + id));
+
         return MappingUtils.mapToSchoolDto(school);
     }
 
     public List<SchoolDto> searchSchools(String query) {
-        return schoolRepository.findByNameContainingIgnoreCaseOrCodeContainingIgnoreCase(query, query).stream()
+        return schoolRepository.findByNameContainingIgnoreCaseOrCodeContainingIgnoreCase(query, query)
+                .stream()
                 .map(MappingUtils::mapToSchoolDto)
                 .collect(Collectors.toList());
     }
 
     public SchoolDto createSchool(SchoolDto schoolDto) {
+
         if (schoolRepository.findByCode(schoolDto.getCode()).isPresent()) {
-            throw new BadRequestException("School with code " + schoolDto.getCode() + " already exists.");
+            throw new BadRequestException(
+                    "School with code " + schoolDto.getCode() + " already exists."
+            );
         }
 
         SchoolModel school = MappingUtils.mapToSchoolEntity(schoolDto);
-        school.setId(null); // Ensure a new ID is generated
+
+        // Ensure MongoDB creates a new ID
+        school.setId(null);
 
         SchoolModel saved = schoolRepository.save(school);
+
         return MappingUtils.mapToSchoolDto(saved);
     }
 
+
     public SchoolDto updateSchool(String id, SchoolDto schoolDto) {
+
         SchoolModel school = schoolRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("School not found with ID: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "School not found with ID: " + id
+                ));
 
-        schoolRepository.findByCode(schoolDto.getCode()).ifPresent(s -> {
-            if (!s.getId().equals(id)) {
-                throw new BadRequestException("School with code " + schoolDto.getCode() + " already exists.");
-            }
-        });
 
+        // Check duplicate school code
+        schoolRepository.findByCode(schoolDto.getCode())
+                .ifPresent(existingSchool -> {
+
+                    if (!existingSchool.getId().equals(id)) {
+                        throw new BadRequestException(
+                                "School with code " + schoolDto.getCode() + " already exists."
+                        );
+                    }
+
+                });
+
+
+        // Update existing school data
         school.setName(schoolDto.getName());
         school.setCode(schoolDto.getCode());
         school.setAddress(schoolDto.getAddress());
         school.setEmail(schoolDto.getEmail());
         school.setPhone(schoolDto.getPhone());
+
         school.setCapacity(schoolDto.getCapacity());
+
+        // New fields
+        school.setAvailableSeats(schoolDto.getAvailableSeats());
+        school.setImageUrl(schoolDto.getImageUrl());
+
         school.setDescription(schoolDto.getDescription());
 
+
         SchoolModel updated = schoolRepository.save(school);
+
         return MappingUtils.mapToSchoolDto(updated);
     }
 
+
     public void deleteSchool(String id) {
+
         if (!schoolRepository.existsById(id)) {
-            throw new ResourceNotFoundException("School not found with ID: " + id);
+            throw new ResourceNotFoundException(
+                    "School not found with ID: " + id
+            );
         }
+
         schoolRepository.deleteById(id);
     }
 }
-

@@ -58,6 +58,7 @@ public class MappingUtils {
     }
     public static SchoolDto mapToSchoolDto(SchoolModel school) {
         if (school == null) return null;
+
         return SchoolDto.builder()
                 .id(school.getId())
                 .name(school.getName())
@@ -66,12 +67,15 @@ public class MappingUtils {
                 .email(school.getEmail())
                 .phone(school.getPhone())
                 .capacity(school.getCapacity())
+                .availableSeats(school.getAvailableSeats())
+                .imageUrl(school.getImageUrl())
                 .description(school.getDescription())
                 .build();
     }
 
     public static SchoolModel mapToSchoolEntity(SchoolDto dto) {
         if (dto == null) return null;
+
         return SchoolModel.builder()
                 .id(dto.getId())
                 .name(dto.getName())
@@ -80,6 +84,8 @@ public class MappingUtils {
                 .email(dto.getEmail())
                 .phone(dto.getPhone())
                 .capacity(dto.getCapacity())
+                .availableSeats(dto.getAvailableSeats())
+                .imageUrl(dto.getImageUrl())
                 .description(dto.getDescription())
                 .build();
     }
