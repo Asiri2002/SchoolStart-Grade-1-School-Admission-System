@@ -89,5 +89,60 @@ public class MappingUtils {
                 .description(dto.getDescription())
                 .build();
     }
+
+    public static ApplicationResponse mapToApplicationResponse(ApplicationModel application) {
+        if (application == null) return null;
+
+        return ApplicationResponse.builder()
+                .id(application.getId())
+
+                // Relationship IDs
+                .childId(application.getChildId())
+                .schoolId(application.getSchoolId())
+
+                // Child information
+                .childFullName(application.getChildFullName())
+                .birthDate(application.getBirthDate())
+                .gender(application.getGender())
+
+                // Parent information
+                .parentFullName(application.getParentFullName())
+                .relationship(application.getRelationship())
+                .nicNumber(application.getNicNumber())
+                .contactNumber(application.getContactNumber())
+
+                // Application details
+                .status(application.getStatus())
+                .submissionDate(application.getSubmissionDate())
+                .documentIds(application.getDocumentIds())
+                .interviewId(application.getInterviewId())
+                .admissionId(application.getAdmissionId())
+
+                .build();
+    }
+
+
+    public static ApplicationModel mapToApplicationEntity(ApplicationRequest request) {
+        if (request == null) return null;
+
+        return ApplicationModel.builder()
+                .childId(request.getChildId())
+                .schoolId(request.getSchoolId())
+
+                // Child information
+                .childFullName(request.getChildFullName())
+                .birthDate(request.getBirthDate())
+                .gender(request.getGender())
+
+                // Parent information
+                .parentFullName(request.getParentFullName())
+                .relationship(request.getRelationship())
+                .nicNumber(request.getNicNumber())
+                .contactNumber(request.getContactNumber())
+
+                .status(ApplicationStatus.SUBMITTED)
+
+                .build();
+    }
 }
 

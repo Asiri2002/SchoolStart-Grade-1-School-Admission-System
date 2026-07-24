@@ -14,16 +14,47 @@ import java.util.List;
 @AllArgsConstructor
 @Builder
 public class ApplicationResponse {
+
     private String id;
+
+
+    // Relationship references
     private String childId;
-    private String childName;
     private String schoolId;
-    private String schoolName;
     private String parentId;
+
+
+    // Child Information
+    private String childFullName;
+    private String birthDate;
+    private String gender;
+
+
+    // Parent Information
+    private String parentFullName;
+    private String relationship;
+    private String nicNumber;
+    private String contactNumber;
+
+
+    // Display names
+    private String childName;
+    private String schoolName;
     private String parentName;
+
+
+    // Application management
     private ApplicationStatus status;
+
     private LocalDateTime submissionDate;
+
+
+    // Documents
     private List<String> documentIds;
+
+
+    // Interview and admission process
     private String interviewId;
+
     private String admissionId;
 }

@@ -12,14 +12,12 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
-
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
 @Document(collection = "applications")
 public class ApplicationModel {
-
 
     @Id
     private String id;
@@ -29,14 +27,30 @@ public class ApplicationModel {
     private String childId;
 
     private String schoolId;
+    private String parentId;
+
+    // Child Information
+    private String childFullName;
+
+    private String birthDate;
+
+    private String gender;
+
+
+    // Parent Information
+    private String parentFullName;
+
+    private String relationship;
+
+    private String nicNumber;
+
+    private String contactNumber;
 
 
 
     // Application management
-
     @Builder.Default
     private ApplicationStatus status = ApplicationStatus.SUBMITTED;
-
 
 
     @Builder.Default
