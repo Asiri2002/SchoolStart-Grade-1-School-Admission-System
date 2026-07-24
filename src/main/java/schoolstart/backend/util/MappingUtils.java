@@ -144,5 +144,17 @@ public class MappingUtils {
 
                 .build();
     }
+    public static DocumentDto mapToDocumentDto(DocumentModel document) {
+        if (document == null) return null;
+        return DocumentDto.builder()
+                .id(document.getId())
+                .applicationId(document.getApplicationId())
+                .name(document.getName())
+                .type(document.getType())
+                .url(document.getUrl())
+                .uploadDate(document.getUploadDate())
+                .status(document.getStatus())
+                .build();
+    }
 }
 
