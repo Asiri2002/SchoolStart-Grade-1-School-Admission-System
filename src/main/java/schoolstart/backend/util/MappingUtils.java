@@ -156,5 +156,34 @@ public class MappingUtils {
                 .status(document.getStatus())
                 .build();
     }
+    public static InterviewDto mapToInterviewDto(InterviewModel interview) {
+        if (interview == null) return null;
+
+        return InterviewDto.builder()
+                .id(interview.getId())
+                .applicationId(interview.getApplicationId())
+                .interviewDate(interview.getInterviewDate())
+                .interviewTime(interview.getInterviewTime())
+                .venue(interview.getVenue())
+                .status(interview.getStatus())
+                .comments(interview.getComments())
+                .score(interview.getScore())
+                .build();
+    }
+
+    public static InterviewModel mapToInterviewEntity(InterviewDto dto) {
+        if (dto == null) return null;
+
+        return InterviewModel.builder()
+                .id(dto.getId())
+                .applicationId(dto.getApplicationId())
+                .interviewDate(dto.getInterviewDate())
+                .interviewTime(dto.getInterviewTime())
+                .venue(dto.getVenue())
+                .status(dto.getStatus())
+                .comments(dto.getComments())
+                .score(dto.getScore())
+                .build();
+    }
 }
 
