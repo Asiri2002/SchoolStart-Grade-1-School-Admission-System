@@ -63,13 +63,18 @@ public class MappingUtils {
                 .id(school.getId())
                 .name(school.getName())
                 .code(school.getCode())
+                .district(school.getDistrict())
+                .type(school.getType())
                 .address(school.getAddress())
                 .email(school.getEmail())
                 .phone(school.getPhone())
+                .principalName(school.getPrincipalName())
                 .capacity(school.getCapacity())
                 .availableSeats(school.getAvailableSeats())
                 .imageUrl(school.getImageUrl())
                 .description(school.getDescription())
+                .active(school.isActive())
+                .createdDate(school.getCreatedDate())
                 .build();
     }
 
@@ -80,13 +85,18 @@ public class MappingUtils {
                 .id(dto.getId())
                 .name(dto.getName())
                 .code(dto.getCode())
+                .district(dto.getDistrict())
+                .type(dto.getType())
                 .address(dto.getAddress())
                 .email(dto.getEmail())
                 .phone(dto.getPhone())
+                .principalName(dto.getPrincipalName())
                 .capacity(dto.getCapacity())
                 .availableSeats(dto.getAvailableSeats())
                 .imageUrl(dto.getImageUrl())
                 .description(dto.getDescription())
+                .active(dto.getActive() != null ? dto.getActive() : true)
+                .createdDate(dto.getCreatedDate())
                 .build();
     }
 

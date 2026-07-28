@@ -9,6 +9,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDate;
+
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -23,6 +25,12 @@ public class SchoolDto {
     @NotBlank(message = "School code is required")
     private String code;
 
+    @NotBlank(message = "District is required")
+    private String district;
+
+    @NotBlank(message = "School type is required")
+    private String type;
+
     @NotBlank(message = "School address is required")
     private String address;
 
@@ -32,6 +40,9 @@ public class SchoolDto {
 
     @NotBlank(message = "Phone number is required")
     private String phone;
+
+    @NotBlank(message = "Principal name is required")
+    private String principalName;
 
     @NotNull(message = "Capacity is required")
     @Min(value = 1, message = "Capacity must be at least 1")
@@ -44,4 +55,12 @@ public class SchoolDto {
     private String imageUrl;
 
     private String description;
+
+    // Active/Inactive status
+    @Builder.Default
+    private Boolean active = true;
+
+    // Record creation date
+    @Builder.Default
+    private LocalDate createdDate = LocalDate.now();
 }

@@ -1,14 +1,15 @@
 package schoolstart.backend.service;
 
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
 import schoolstart.backend.dto.SchoolDto;
 import schoolstart.backend.entity.SchoolModel;
 import schoolstart.backend.exception.BadRequestException;
 import schoolstart.backend.exception.ResourceNotFoundException;
 import schoolstart.backend.repository.SchoolRepository;
 import schoolstart.backend.util.MappingUtils;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -19,20 +20,46 @@ public class SchoolService {
     private SchoolRepository schoolRepository;
 
     public List<SchoolDto> getAllSchools() {
-        return schoolRepository.findAll().stream()
+        return schoolRepository.findAll()
+                .stream()
                 .map(MappingUtils::mapToSchoolDto)
                 .collect(Collectors.toList());
     }
 
     public SchoolDto getSchoolById(String id) {
         SchoolModel school = schoolRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("School not found with ID: " + id));
+                .orElseThrow(() ->
+                        new ResourceNotFoundException(
+                                "School not found with ID: " + id
+                        ));
 
         return MappingUtils.mapToSchoolDto(school);
     }
 
     public List<SchoolDto> searchSchools(String query) {
-        return schoolRepository.findByNameContainingIgnoreCaseOrCodeContainingIgnoreCase(query, query)
+        return schoolRepository
+                .findByNameContainingIgnoreCaseOrCodeContainingIgnoreCase(query, query)
+                .stream()
+                .map(MappingUtils::mapToSchoolDto)
+                .collect(Collectors.toList());
+    }
+
+    public List<SchoolDto> getSchoolsByDistrict(String district) {
+        return schoolRepository.findByDistrictIgnoreCase(district)
+                .stream()
+                .map(MappingUtils::mapToSchoolDto)
+                .collect(Collectors.toList());
+    }
+
+    public List<SchoolDto> getSchoolsByType(String type) {
+        return schoolRepository.findByTypeIgnoreCase(type)
+                .stream()
+                .map(MappingUtils::mapToSchoolDto)
+                .collect(Collectors.toList());
+    }
+
+    public List<SchoolDto> getSchoolsByStatus(boolean active) {
+        return schoolRepository.findByActive(active)
                 .stream()
                 .map(MappingUtils::mapToSchoolDto)
                 .collect(Collectors.toList());
@@ -40,74 +67,109 @@ public class SchoolService {
 
     public SchoolDto createSchool(SchoolDto schoolDto) {
 
-        if (schoolRepository.findByCode(schoolDto.getCode()).isPresent()) {
+        if (schoolRepository.existsByCode(schoolDto.getCode())) {
             throw new BadRequestException(
-                    "School with code " + schoolDto.getCode() + " already exists."
+                    "School with code '" + schoolDto.getCode() + "' already exists."
+            );
+        }
+
+        if (schoolRepository.existsByName(schoolDto.getName())) {
+            throw new BadRequestException(
+                    "School with name '" + schoolDto.getName() + "' already exists."
+            );
+        }
+
+        if (schoolRepository.existsByEmail(schoolDto.getEmail())) {
+            throw new BadRequestException(
+                    "Email '" + schoolDto.getEmail() + "' already exists."
             );
         }
 
         SchoolModel school = MappingUtils.mapToSchoolEntity(schoolDto);
 
-        // Ensure MongoDB creates a new ID
         school.setId(null);
+        school.setCreatedDate(LocalDate.now());
 
-        SchoolModel saved = schoolRepository.save(school);
+        if (schoolDto.getActive() == null) {
+            school.setActive(true);
+        }
 
-        return MappingUtils.mapToSchoolDto(saved);
+        SchoolModel savedSchool = schoolRepository.save(school);
+
+        return MappingUtils.mapToSchoolDto(savedSchool);
     }
-
 
     public SchoolDto updateSchool(String id, SchoolDto schoolDto) {
 
         SchoolModel school = schoolRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException(
-                        "School not found with ID: " + id
-                ));
+                .orElseThrow(() ->
+                        new ResourceNotFoundException(
+                                "School not found with ID: " + id
+                        ));
 
-
-        // Check duplicate school code
         schoolRepository.findByCode(schoolDto.getCode())
-                .ifPresent(existingSchool -> {
-
-                    if (!existingSchool.getId().equals(id)) {
+                .ifPresent(existing -> {
+                    if (!existing.getId().equals(id)) {
                         throw new BadRequestException(
-                                "School with code " + schoolDto.getCode() + " already exists."
+                                "School code '" + schoolDto.getCode() + "' already exists."
                         );
                     }
-
                 });
 
+        schoolRepository.findByEmail(schoolDto.getEmail())
+                .ifPresent(existing -> {
+                    if (!existing.getId().equals(id)) {
+                        throw new BadRequestException(
+                                "Email '" + schoolDto.getEmail() + "' already exists."
+                        );
+                    }
+                });
 
-        // Update existing school data
         school.setName(schoolDto.getName());
         school.setCode(schoolDto.getCode());
+        school.setDistrict(schoolDto.getDistrict());
+        school.setType(schoolDto.getType());
         school.setAddress(schoolDto.getAddress());
         school.setEmail(schoolDto.getEmail());
         school.setPhone(schoolDto.getPhone());
-
+        school.setPrincipalName(schoolDto.getPrincipalName());
         school.setCapacity(schoolDto.getCapacity());
-
-        // New fields
         school.setAvailableSeats(schoolDto.getAvailableSeats());
         school.setImageUrl(schoolDto.getImageUrl());
-
         school.setDescription(schoolDto.getDescription());
 
+        if (schoolDto.getActive() != null) {
+            school.setActive(schoolDto.getActive());
+        }
 
-        SchoolModel updated = schoolRepository.save(school);
+        SchoolModel updatedSchool = schoolRepository.save(school);
 
-        return MappingUtils.mapToSchoolDto(updated);
+        return MappingUtils.mapToSchoolDto(updatedSchool);
     }
-
 
     public void deleteSchool(String id) {
 
-        if (!schoolRepository.existsById(id)) {
-            throw new ResourceNotFoundException(
-                    "School not found with ID: " + id
-            );
-        }
+        SchoolModel school = schoolRepository.findById(id)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException(
+                                "School not found with ID: " + id
+                        ));
 
-        schoolRepository.deleteById(id);
+        schoolRepository.delete(school);
+    }
+
+    public SchoolDto changeSchoolStatus(String id) {
+
+        SchoolModel school = schoolRepository.findById(id)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException(
+                                "School not found with ID: " + id
+                        ));
+
+        school.setActive(!school.isActive());
+
+        SchoolModel updatedSchool = schoolRepository.save(school);
+
+        return MappingUtils.mapToSchoolDto(updatedSchool);
     }
 }

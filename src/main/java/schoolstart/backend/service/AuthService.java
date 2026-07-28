@@ -60,7 +60,7 @@ public class AuthService {
         UserModel savedUser = userRepository.save(user);
 
         // If the registered user is a parent, create a blank Parent profile for them
-        if (registerRequest.getRole() == Role.ROLE_PARENT) {
+        if (registerRequest.getRole() == Role.PARENT) {
             ParentModel parent = ParentModel.builder()
                     .userId(savedUser.getId())
                     .firstName("")
