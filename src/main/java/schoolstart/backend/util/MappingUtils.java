@@ -218,5 +218,34 @@ public class MappingUtils {
                 .feeStatus(admission.getFeeStatus())
                 .build();
     }
+    public static NotificationDto mapToNotificationDto(NotificationModel notification) {
+        if (notification == null) {
+            return null;
+        }
+
+        return NotificationDto.builder()
+                .id(notification.getId())
+                .userId(notification.getUserId())
+                .message(notification.getMessage())
+                .type(notification.getType())
+                .read(notification.isRead())
+                .timestamp(notification.getTimestamp())
+                .build();
+    }
+
+    public static NotificationModel mapToNotificationEntity(NotificationDto dto) {
+        if (dto == null) {
+            return null;
+        }
+
+        return NotificationModel.builder()
+                .id(dto.getId())
+                .userId(dto.getUserId())
+                .message(dto.getMessage())
+                .type(dto.getType())
+                .read(dto.isRead())
+                .timestamp(dto.getTimestamp())
+                .build();
+    }
 }
 
