@@ -185,5 +185,38 @@ public class MappingUtils {
                 .score(dto.getScore())
                 .build();
     }
+    public static AdmissionModel mapToAdmissionModel(AdmissionDto dto) {
+        if (dto == null) {
+            return null;
+        }
+
+        return AdmissionModel.builder()
+                .id(dto.getId())
+                .applicationId(dto.getApplicationId())
+                .admissionNumber(dto.getAdmissionNumber())
+                .studentName(dto.getStudentName())
+                .schoolName(dto.getSchoolName())
+                .admissionDate(dto.getAdmissionDate())
+                .status(dto.getStatus())
+                .feeStatus(dto.getFeeStatus())
+                .build();
+    }
+
+    public static AdmissionDto mapToAdmissionDto(AdmissionModel admission) {
+        if (admission == null) {
+            return null;
+        }
+
+        return AdmissionDto.builder()
+                .id(admission.getId())
+                .applicationId(admission.getApplicationId())
+                .admissionNumber(admission.getAdmissionNumber())
+                .studentName(admission.getStudentName())
+                .schoolName(admission.getSchoolName())
+                .admissionDate(admission.getAdmissionDate())
+                .status(admission.getStatus())
+                .feeStatus(admission.getFeeStatus())
+                .build();
+    }
 }
 

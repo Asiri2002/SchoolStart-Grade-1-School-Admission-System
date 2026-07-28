@@ -76,6 +76,13 @@
 			<scope>runtime</scope>
 		</dependency>
 
+		<!-- OpenPDF -->
+		<dependency>
+			<groupId>com.github.librepdf</groupId>
+			<artifactId>openpdf</artifactId>
+			<version>2.2.2</version>
+		</dependency>
+
 		<!-- Testing -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
