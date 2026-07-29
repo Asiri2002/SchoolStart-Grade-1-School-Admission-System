@@ -5,9 +5,11 @@ import schoolstart.backend.dto.LoginRequest;
 import schoolstart.backend.dto.RegisterRequest;
 import schoolstart.backend.entity.ParentModel;
 import schoolstart.backend.entity.Role;
+import schoolstart.backend.entity.SchoolAdminModel;
 import schoolstart.backend.entity.UserModel;
 import schoolstart.backend.exception.BadRequestException;
 import schoolstart.backend.repository.ParentRepository;
+import schoolstart.backend.repository.SchoolAdminRepository;
 import schoolstart.backend.repository.UserRepository;
 import schoolstart.backend.security.JwtTokenProvider;
 import schoolstart.backend.security.UserPrincipal;
@@ -30,6 +32,9 @@ public class AuthService {
     private ParentRepository parentRepository;
 
     @Autowired
+    private SchoolAdminRepository schoolAdminRepository;
+
+    @Autowired
     private PasswordEncoder passwordEncoder;
 
     @Autowired
@@ -40,12 +45,29 @@ public class AuthService {
 
     @Transactional
     public void registerUser(RegisterRequest registerRequest) {
+
+        if (registerRequest.getRole() == null) {
+            throw new BadRequestException("Role is required.");
+
+        }
+
         if (userRepository.existsByUsername(registerRequest.getUsername())) {
             throw new BadRequestException("Username is already taken!");
         }
 
         if (userRepository.existsByEmail(registerRequest.getEmail())) {
             throw new BadRequestException("Email Address already in use!");
+
+        }
+
+
+
+        // Validate School ID for School Admin registration
+        if (registerRequest.getRole() == Role.ROLE_SCHOOL_ADMIN &&
+                (registerRequest.getSchoolId() == null ||
+                        registerRequest.getSchoolId().isBlank())) {
+
+            throw new BadRequestException("School ID is required.");
         }
 
         // Creating user's account
@@ -69,6 +91,17 @@ public class AuthService {
                     .address("")
                     .build();
             parentRepository.save(parent);
+        }
+
+        if (registerRequest.getRole() == Role.ROLE_SCHOOL_ADMIN) {
+            SchoolAdminModel schoolAdmin = SchoolAdminModel.builder()
+                    .userId(savedUser.getId())
+                    .schoolId(registerRequest.getSchoolId())
+                    .firstName("")
+                    .lastName("")
+                    .phone("")
+                    .build();
+            schoolAdminRepository.save(schoolAdmin);
         }
     }
 
