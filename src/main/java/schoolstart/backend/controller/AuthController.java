@@ -1,7 +1,7 @@
 package schoolstart.backend.controller;
 
 import jakarta.validation.Valid;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -14,20 +14,23 @@ import schoolstart.backend.service.AuthService;
 @RestController
 @RequestMapping("/api/auth")
 @CrossOrigin(origins = "*")
+@RequiredArgsConstructor
 public class AuthController {
 
-    @Autowired
-    private AuthService authService;
+    private final AuthService authService;
 
+    // Parent Registration
     @PostMapping("/register")
     public ResponseEntity<String> registerUser(
             @Valid @RequestBody RegisterRequest registerRequest) {
 
         authService.registerUser(registerRequest);
 
-        return new ResponseEntity<>("User registered successfully!", HttpStatus.CREATED);
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body("Parent registered successfully!");
     }
 
+    // User Login
     @PostMapping("/login")
     public ResponseEntity<AuthResponse> loginUser(
             @Valid @RequestBody LoginRequest loginRequest) {
