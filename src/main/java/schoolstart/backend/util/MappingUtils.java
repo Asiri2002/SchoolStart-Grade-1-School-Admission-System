@@ -63,13 +63,18 @@ public class MappingUtils {
                 .id(school.getId())
                 .name(school.getName())
                 .code(school.getCode())
+                .district(school.getDistrict())
+                .type(school.getType())
                 .address(school.getAddress())
                 .email(school.getEmail())
                 .phone(school.getPhone())
+                .principalName(school.getPrincipalName())
                 .capacity(school.getCapacity())
                 .availableSeats(school.getAvailableSeats())
                 .imageUrl(school.getImageUrl())
                 .description(school.getDescription())
+                .active(school.isActive())
+                .createdDate(school.getCreatedDate())
                 .build();
     }
 
@@ -80,13 +85,18 @@ public class MappingUtils {
                 .id(dto.getId())
                 .name(dto.getName())
                 .code(dto.getCode())
+                .district(dto.getDistrict())
+                .type(dto.getType())
                 .address(dto.getAddress())
                 .email(dto.getEmail())
                 .phone(dto.getPhone())
+                .principalName(dto.getPrincipalName())
                 .capacity(dto.getCapacity())
                 .availableSeats(dto.getAvailableSeats())
                 .imageUrl(dto.getImageUrl())
                 .description(dto.getDescription())
+                .active(dto.getActive() != null ? dto.getActive() : true)
+                .createdDate(dto.getCreatedDate())
                 .build();
     }
 
@@ -183,6 +193,68 @@ public class MappingUtils {
                 .status(dto.getStatus())
                 .comments(dto.getComments())
                 .score(dto.getScore())
+                .build();
+    }
+    public static AdmissionModel mapToAdmissionModel(AdmissionDto dto) {
+        if (dto == null) {
+            return null;
+        }
+
+        return AdmissionModel.builder()
+                .id(dto.getId())
+                .applicationId(dto.getApplicationId())
+                .admissionNumber(dto.getAdmissionNumber())
+                .studentName(dto.getStudentName())
+                .schoolName(dto.getSchoolName())
+                .admissionDate(dto.getAdmissionDate())
+                .status(dto.getStatus())
+                .feeStatus(dto.getFeeStatus())
+                .build();
+    }
+
+    public static AdmissionDto mapToAdmissionDto(AdmissionModel admission) {
+        if (admission == null) {
+            return null;
+        }
+
+        return AdmissionDto.builder()
+                .id(admission.getId())
+                .applicationId(admission.getApplicationId())
+                .admissionNumber(admission.getAdmissionNumber())
+                .studentName(admission.getStudentName())
+                .schoolName(admission.getSchoolName())
+                .admissionDate(admission.getAdmissionDate())
+                .status(admission.getStatus())
+                .feeStatus(admission.getFeeStatus())
+                .build();
+    }
+    public static NotificationDto mapToNotificationDto(NotificationModel notification) {
+        if (notification == null) {
+            return null;
+        }
+
+        return NotificationDto.builder()
+                .id(notification.getId())
+                .userId(notification.getUserId())
+                .message(notification.getMessage())
+                .type(notification.getType())
+                .read(notification.isRead())
+                .timestamp(notification.getTimestamp())
+                .build();
+    }
+
+    public static NotificationModel mapToNotificationEntity(NotificationDto dto) {
+        if (dto == null) {
+            return null;
+        }
+
+        return NotificationModel.builder()
+                .id(dto.getId())
+                .userId(dto.getUserId())
+                .message(dto.getMessage())
+                .type(dto.getType())
+                .read(dto.isRead())
+                .timestamp(dto.getTimestamp())
                 .build();
     }
 }
