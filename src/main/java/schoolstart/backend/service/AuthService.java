@@ -63,7 +63,7 @@ public class AuthService {
 
 
         // Validate School ID for School Admin registration
-        if (registerRequest.getRole() == Role.ROLE_SCHOOL_ADMIN &&
+        if (registerRequest.getRole() == Role.SCHOOL_ADMIN &&
                 (registerRequest.getSchoolId() == null ||
                         registerRequest.getSchoolId().isBlank())) {
 
@@ -93,7 +93,7 @@ public class AuthService {
             parentRepository.save(parent);
         }
 
-        if (registerRequest.getRole() == Role.ROLE_SCHOOL_ADMIN) {
+        if (registerRequest.getRole() == Role.SCHOOL_ADMIN) {
             SchoolAdminModel schoolAdmin = SchoolAdminModel.builder()
                     .userId(savedUser.getId())
                     .schoolId(registerRequest.getSchoolId())
