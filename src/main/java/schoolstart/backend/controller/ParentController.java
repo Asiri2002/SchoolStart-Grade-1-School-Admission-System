@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/parent/profile")
-@PreAuthorize("hasAuthority('ROLE_PARENT')")
+@PreAuthorize("hasAuthority('PARENT')")
 @CrossOrigin(origins = "*")
 public class ParentController {
 

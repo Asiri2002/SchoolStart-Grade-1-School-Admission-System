@@ -21,7 +21,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/applications")
-@PreAuthorize("hasAuthority('ROLE_PARENT')")
+@PreAuthorize("hasAuthority('PARENT')")
 @CrossOrigin(origins = "*")
 public class ApplicationController {
 
