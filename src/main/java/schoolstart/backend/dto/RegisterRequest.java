@@ -24,11 +24,5 @@ public class RegisterRequest {
     @NotBlank(message = "Password is required")
     @Size(min = 6, message = "Password must be at least 6 characters")
     private String password;
-
-    @NotNull(message = "Role is required")
-    private Role role;
-
-    //For School Admin
-    private String schoolId;
 }
 
