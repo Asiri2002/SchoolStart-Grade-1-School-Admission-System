@@ -8,7 +8,7 @@ import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 
-//Entity class representing a School Admin profile.
+//Entity class representing a School Admin .
 
 @Data
 @NoArgsConstructor
