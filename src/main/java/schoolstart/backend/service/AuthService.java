@@ -16,9 +16,9 @@ import schoolstart.backend.entity.Role;
 import schoolstart.backend.entity.UserModel;
 import schoolstart.backend.exception.BadRequestException;
 import schoolstart.backend.repository.ParentRepository;
-import schoolstart.backend.repository.UserRepository;
 import schoolstart.backend.security.JwtTokenProvider;
 import schoolstart.backend.security.UserPrincipal;
+import schoolstart.backend.repository.UserRepository;
 
 @Service
 public class AuthService {
