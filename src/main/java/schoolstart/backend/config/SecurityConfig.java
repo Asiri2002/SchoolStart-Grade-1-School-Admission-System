@@ -56,81 +56,90 @@ public class SecurityConfig {
     }
 
     @Bean
-    public SecurityFilterChain securityFilterChain(
-            HttpSecurity http
-    ) throws Exception {
+    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 
         http
                 .csrf(csrf -> csrf.disable())
+
                 .sessionManagement(session ->
-                        session.sessionCreationPolicy(
-                                SessionCreationPolicy.STATELESS
-                        )
+                        session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
+
                 .authorizeHttpRequests(auth -> auth
 
-                        // Authentication APIs
+                        // =========================
+                        // PUBLIC APIs
+                        // =========================
+
                         .requestMatchers("/api/auth/**")
                         .permitAll()
 
-                        // Swagger APIs
+                        // Swagger
                         .requestMatchers(
                                 "/v3/api-docs/**",
                                 "/swagger-ui/**",
                                 "/swagger-ui.html",
                                 "/swagger-resources/**",
                                 "/webjars/**"
-                        )
-                        .permitAll()
+                        ).permitAll()
 
                         // =========================
                         // SCHOOL APIs
                         // =========================
 
-                        // View schools
-                        // Parent + School Admin + Education Admin
-                        .requestMatchers(
-                                HttpMethod.GET,
-                                "/api/schools/**"
-                        )
+                        // View Schools
+                        .requestMatchers(HttpMethod.GET, "/api/schools/**")
                         .hasAnyRole(
                                 "PARENT",
                                 "SCHOOL_ADMIN",
                                 "EDUCATION_ADMIN"
                         )
 
-                        // Add school
-                        // Only Education Admin
-                        .requestMatchers(
-                                HttpMethod.POST,
-                                "/api/schools/**"
-                        )
+                        // Add School
+                        .requestMatchers(HttpMethod.POST, "/api/schools/**")
                         .hasRole("EDUCATION_ADMIN")
 
-                        // Update schools
-                        // School Admin + Education Admin
-                        .requestMatchers(
-                                HttpMethod.PUT,
-                                "/api/schools/**"
-                        )
+                        // Update School
+                        .requestMatchers(HttpMethod.PUT, "/api/schools/**")
                         .hasAnyRole(
                                 "SCHOOL_ADMIN",
                                 "EDUCATION_ADMIN"
                         )
 
-                        // Delete school
-                        // Only Education Admin
-                        .requestMatchers(
-                                HttpMethod.DELETE,
-                                "/api/schools/**"
-                        )
+                        // Delete School
+                        .requestMatchers(HttpMethod.DELETE, "/api/schools/**")
                         .hasRole("EDUCATION_ADMIN")
 
-                        // Other protected APIs
+                        // =========================
+                        // SCHOOL ADMIN APIs
+                        // =========================
+
+                        // Get School Admin(s)
+                        .requestMatchers(HttpMethod.GET, "/api/school-admins/**")
+                        .hasRole("EDUCATION_ADMIN")
+
+                        // Create School Admin
+                        .requestMatchers(HttpMethod.POST, "/api/school-admins/**")
+                        .hasRole("EDUCATION_ADMIN")
+
+                        // Update School Admin
+                        .requestMatchers(HttpMethod.PUT, "/api/school-admins/**")
+                        .hasRole("EDUCATION_ADMIN")
+
+                        // Delete School Admin
+                        .requestMatchers(HttpMethod.DELETE, "/api/school-admins/**")
+                        .hasRole("EDUCATION_ADMIN")
+
+                        // =========================
+                        // OTHER APIs
+                        // =========================
+
                         .anyRequest()
                         .authenticated()
                 )
+
                 .authenticationProvider(authenticationProvider())
+
                 .addFilterBefore(
                         jwtAuthenticationFilter,
                         UsernamePasswordAuthenticationFilter.class

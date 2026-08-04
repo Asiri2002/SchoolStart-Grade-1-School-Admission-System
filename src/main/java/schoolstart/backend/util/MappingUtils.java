@@ -257,5 +257,36 @@ public class MappingUtils {
                 .timestamp(dto.getTimestamp())
                 .build();
     }
+    public static SchoolAdminResponse mapToSchoolAdminResponse(SchoolAdminModel admin) {
+        if (admin == null) {
+            return null;
+        }
+
+        return SchoolAdminResponse.builder()
+                .id(admin.getId())
+                .userId(admin.getUserId())
+                .schoolId(admin.getSchoolId())
+                .schoolName(admin.getSchoolName())
+                .name(admin.getName())
+                .phone(admin.getPhone())
+                .build();
+    }
+
+    public static SchoolAdminModel mapToSchoolAdminEntity(
+            SchoolAdminRequest request,
+            String userId) {
+
+        if (request == null) {
+            return null;
+        }
+
+        return SchoolAdminModel.builder()
+                .userId(userId)
+                .schoolId(request.getSchoolId())
+                .schoolName(request.getSchoolName())
+                .Name(request.getName())
+                .phone(request.getPhone())
+                .build();
+    }
 }
 
