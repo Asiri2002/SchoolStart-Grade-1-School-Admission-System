@@ -21,6 +21,8 @@ public class InterviewDto {
     @NotBlank(message = "Application ID is required")
     private String applicationId;
 
+    private String schoolId;
+
     @NotNull(message = "Interview date is required")
     private LocalDate interviewDate;
 

@@ -20,20 +20,30 @@ public class InterviewModel {
     @Id
     private String id;
 
+    // Application reference
     private String applicationId;
 
-    // Interview Date
+    // Parent who receives notifications
+    private String parentId;
+
+    // School that conducts the interview
+    private String schoolId;
+
+    // Interview date
     private LocalDate interviewDate;
 
-    // Interview Time
+    // Interview time
     private LocalTime interviewTime;
 
+    // Interview location
     private String venue;
 
     @Builder.Default
-    private String status = "SCHEDULED"; // SCHEDULED, COMPLETED, ABSENT, CANCELLED
+    private String status = "SCHEDULED";
+    // SCHEDULED, COMPLETED, ABSENT, CANCELLED
 
     private String comments;
 
+    // Interview marks
     private Integer score;
 }

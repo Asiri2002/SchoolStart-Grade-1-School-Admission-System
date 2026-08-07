@@ -114,10 +114,6 @@ public class SecurityConfig {
                         // SCHOOL ADMIN APIs
                         // =========================
 
-                                // =========================
-// SCHOOL ADMIN APIs
-// =========================
-
                         // Get School Admin(s)
                                 .requestMatchers(HttpMethod.GET, "/api/school-admins/**")
                                 .hasAuthority("EDUCATION_ADMIN")
@@ -133,6 +129,37 @@ public class SecurityConfig {
                         // Delete School Admin
                                 .requestMatchers(HttpMethod.DELETE, "/api/school-admins/**")
                                 .hasAuthority("EDUCATION_ADMIN")
+
+
+
+
+                        // =========================
+                        // Interviews APIs
+                        // =========================
+
+
+                                // Get Interviews
+                                .requestMatchers(HttpMethod.GET, "/api/interviews/**")
+                                .hasAnyAuthority(
+                                        "PARENT",
+                                        "SCHOOL_ADMIN",
+                                        "EDUCATION_ADMIN"
+                                )
+
+                                // Create Interview
+                                .requestMatchers(HttpMethod.POST, "/api/interviews/**")
+                                .hasAuthority("SCHOOL_ADMIN")
+
+                                // Update Interview
+                                .requestMatchers(HttpMethod.PUT, "/api/interviews/**")
+                                .hasAuthority("SCHOOL_ADMIN")
+
+                                // Delete Interview
+                                .requestMatchers(HttpMethod.DELETE, "/api/interviews/**")
+                                .hasAuthority("SCHOOL_ADMIN")
+
+
+
                         // =========================
                         // OTHER APIs
                         // =========================

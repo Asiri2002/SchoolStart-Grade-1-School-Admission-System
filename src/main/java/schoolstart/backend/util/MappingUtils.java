@@ -167,11 +167,16 @@ public class MappingUtils {
                 .build();
     }
     public static InterviewDto mapToInterviewDto(InterviewModel interview) {
-        if (interview == null) return null;
+
+        if (interview == null) {
+            return null;
+        }
+
 
         return InterviewDto.builder()
                 .id(interview.getId())
                 .applicationId(interview.getApplicationId())
+                .schoolId(interview.getSchoolId())
                 .interviewDate(interview.getInterviewDate())
                 .interviewTime(interview.getInterviewTime())
                 .venue(interview.getVenue())
@@ -181,19 +186,37 @@ public class MappingUtils {
                 .build();
     }
 
-    public static InterviewModel mapToInterviewEntity(InterviewDto dto) {
-        if (dto == null) return null;
 
-        return InterviewModel.builder()
-                .id(dto.getId())
-                .applicationId(dto.getApplicationId())
-                .interviewDate(dto.getInterviewDate())
-                .interviewTime(dto.getInterviewTime())
-                .venue(dto.getVenue())
-                .status(dto.getStatus())
-                .comments(dto.getComments())
-                .score(dto.getScore())
-                .build();
+
+    public static InterviewModel mapToInterviewEntity(
+            InterviewDto dto) {
+
+        if (dto == null) {
+            return null;
+        }
+
+
+        InterviewModel.InterviewModelBuilder builder =
+                InterviewModel.builder()
+                        .id(dto.getId())
+                        .applicationId(dto.getApplicationId())
+                        .interviewDate(dto.getInterviewDate())
+                        .interviewTime(dto.getInterviewTime())
+                        .venue(dto.getVenue())
+                        .comments(dto.getComments())
+                        .score(dto.getScore());
+
+
+        if (dto.getStatus() != null) {
+
+            builder.status(
+                    dto.getStatus()
+            );
+
+        }
+
+
+        return builder.build();
     }
     public static AdmissionModel mapToAdmissionModel(AdmissionDto dto) {
         if (dto == null) {
