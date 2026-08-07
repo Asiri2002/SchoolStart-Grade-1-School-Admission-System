@@ -15,7 +15,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/school-admins")
 @RequiredArgsConstructor
-@PreAuthorize("hasRole('EDUCATION_ADMIN')")
+@PreAuthorize("hasAuthority('EDUCATION_ADMIN')")
 public class SchoolAdminController {
 
     private final SchoolAdminService schoolAdminService;

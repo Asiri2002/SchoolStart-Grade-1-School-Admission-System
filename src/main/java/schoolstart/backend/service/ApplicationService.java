@@ -17,6 +17,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 
+
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -42,6 +43,12 @@ public class ApplicationService {
 
     @Autowired
     private ParentRepository parentRepository;
+
+    @Autowired
+    private SchoolAdminRepository schoolAdminRepository;
+
+    @Autowired
+    private NotificationService notificationService;
 
 
     // NEW
@@ -161,27 +168,35 @@ public class ApplicationService {
                         .build();
 
         // Save application
-
         ApplicationModel saved =
                 applicationRepository.save(application);
 
 
-        // CREATE FIRST STATUS HISTORY
+        // Notify all school admins
+        List<SchoolAdminModel> schoolAdmins =
+                schoolAdminRepository.findBySchoolId(saved.getSchoolId());
 
+        for (SchoolAdminModel admin : schoolAdmins) {
+
+            notificationService.createNotification(
+                    admin.getUserId(),
+                    "A new application has been submitted by "
+                            + parent.getFirstName()
+                            + " "
+                            + parent.getLastName(),
+                    "APPLICATION"
+            );
+        }
+
+// CREATE FIRST STATUS HISTORY
         ApplicationStatusHistory history =
                 ApplicationStatusHistory.builder()
-                        .applicationId(
-                                saved.getId()
-                        )
-                        .status(
-                                saved.getStatus()
-                        )
-                        .updatedAt(
-                                LocalDateTime.now()
-                        )
+                        .applicationId(saved.getId())
+                        .status(saved.getStatus())
+                        .updatedAt(LocalDateTime.now())
                         .build();
-        historyRepository.save(history);
 
+        historyRepository.save(history);
 
         // Update child applications list
         child.getApplicationIds()
@@ -236,63 +251,73 @@ public class ApplicationService {
             String id,
             String userId,
             ApplicationRequest request
-    ){
-        ParentModel parent =
-                getParentByUserId(userId);
-        ApplicationModel application =
-                applicationRepository.findById(id)
-                        .orElseThrow(() ->
-                                new ResourceNotFoundException(
-                                        "Application not found"
-                                ));
-        if(!application.getParentId()
-                .equals(parent.getId())) {
-            throw new BadRequestException(
-                    "You cannot update this application"
-            );
+    ) {
 
+        ParentModel parent = getParentByUserId(userId);
+
+        ApplicationModel application = applicationRepository.findById(id)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("Application not found"));
+
+        if (!application.getParentId().equals(parent.getId())) {
+            throw new BadRequestException("You cannot update this application");
         }
-        ChildModel child =
-                childRepository.findById(request.getChildId())
 
-                        .orElseThrow(() ->
-                                new ResourceNotFoundException(
-                                        "Child not found"
-                                ));
-        SchoolModel school =
-                schoolRepository.findById(request.getSchoolId())
+        ChildModel child = childRepository.findById(request.getChildId())
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("Child not found"));
 
-                        .orElseThrow(() ->
-                                new ResourceNotFoundException(
-                                        "School not found"
-                                ));
+        if (!child.getParentId().equals(parent.getId())) {
+            throw new BadRequestException("You cannot update this child");
+        }
+
+        SchoolModel school = schoolRepository.findById(request.getSchoolId())
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("School not found"));
+
+        // Update child details
+        String[] childName = request.getChildFullName().trim().split("\\s+", 2);
+
+        child.setFirstName(childName[0]);
+
+        if (childName.length > 1) {
+            child.setLastName(childName[1]);
+        }
+
+        child.setDateOfBirth(java.time.LocalDate.parse(request.getBirthDate()));
+        child.setGender(request.getGender());
+
+        childRepository.save(child);
+
+        // Update parent details
+        String[] parentName = request.getParentFullName().trim().split("\\s+", 2);
+
+        parent.setFirstName(parentName[0]);
+
+        if (parentName.length > 1) {
+            parent.setLastName(parentName[1]);
+        }
+
+        parent.setPhone(request.getContactNumber());
+
+        parentRepository.save(parent);
+
+        // Update application
         application.setChildId(child.getId());
         application.setSchoolId(school.getId());
-        application.setChildFullName(
-                child.getFirstName()
-                        +" "
-                        +child.getLastName()
-        );
-        application.setBirthDate(
-                child.getDateOfBirth()
-                        .toString()
-        );
-        application.setGender(
-                child.getGender()
-        );
-        application.setRelationship(
-                request.getRelationship()
-        );
-        application.setNicNumber(
-                request.getNicNumber()
-        );
-        application.setContactNumber(
-                request.getContactNumber()
-        );
-        return mapToResponse(
-                applicationRepository.save(application)
-        );
 
+        application.setChildFullName(request.getChildFullName());
+        application.setBirthDate(request.getBirthDate());
+        application.setGender(request.getGender());
+
+        application.setParentFullName(request.getParentFullName());
+        application.setRelationship(request.getRelationship());
+        application.setNicNumber(request.getNicNumber());
+        application.setContactNumber(request.getContactNumber());
+
+        ApplicationModel updated = applicationRepository.save(application);
+
+        return mapToResponse(updated);
     }
 
 

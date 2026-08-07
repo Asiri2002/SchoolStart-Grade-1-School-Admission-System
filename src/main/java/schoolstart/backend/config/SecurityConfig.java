@@ -114,22 +114,25 @@ public class SecurityConfig {
                         // SCHOOL ADMIN APIs
                         // =========================
 
+                                // =========================
+// SCHOOL ADMIN APIs
+// =========================
+
                         // Get School Admin(s)
-                        .requestMatchers(HttpMethod.GET, "/api/school-admins/**")
-                        .hasRole("EDUCATION_ADMIN")
+                                .requestMatchers(HttpMethod.GET, "/api/school-admins/**")
+                                .hasAuthority("EDUCATION_ADMIN")
 
                         // Create School Admin
-                        .requestMatchers(HttpMethod.POST, "/api/school-admins/**")
-                        .hasRole("EDUCATION_ADMIN")
+                                .requestMatchers(HttpMethod.POST, "/api/school-admins/**")
+                                .hasAuthority("EDUCATION_ADMIN")
 
                         // Update School Admin
-                        .requestMatchers(HttpMethod.PUT, "/api/school-admins/**")
-                        .hasRole("EDUCATION_ADMIN")
+                                .requestMatchers(HttpMethod.PUT, "/api/school-admins/**")
+                                .hasAuthority("EDUCATION_ADMIN")
 
                         // Delete School Admin
-                        .requestMatchers(HttpMethod.DELETE, "/api/school-admins/**")
-                        .hasRole("EDUCATION_ADMIN")
-
+                                .requestMatchers(HttpMethod.DELETE, "/api/school-admins/**")
+                                .hasAuthority("EDUCATION_ADMIN")
                         // =========================
                         // OTHER APIs
                         // =========================
