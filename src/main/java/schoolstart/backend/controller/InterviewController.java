@@ -19,37 +19,33 @@ import java.util.List;
 @CrossOrigin(origins = "*")
 public class InterviewController {
 
-
     private final InterviewService interviewService;
 
 
-    // ============================
-    // Create Interview
+    // =========================================================
+    // CREATE INTERVIEW
     // Only SCHOOL_ADMIN
-    // ============================
+    // =========================================================
     @PostMapping
     @PreAuthorize("hasAuthority('SCHOOL_ADMIN')")
     public ResponseEntity<InterviewDto> createInterview(
             @Valid @RequestBody InterviewDto dto,
             @AuthenticationPrincipal UserPrincipal userPrincipal) {
 
-
-        return ResponseEntity.ok(
+        InterviewDto createdInterview =
                 interviewService.createInterview(
                         userPrincipal.getId(),
                         dto
-                )
-        );
+                );
+
+        return ResponseEntity.ok(createdInterview);
     }
 
 
-
-    // ============================
-    // Get Interviews
-    // PARENT
-    // SCHOOL_ADMIN
-    // EDUCATION_ADMIN
-    // ============================
+    // =========================================================
+    // GET INTERVIEWS
+    // PARENT / SCHOOL_ADMIN / EDUCATION_ADMIN
+    // =========================================================
     @GetMapping
     @PreAuthorize(
             "hasAuthority('PARENT') or " +
@@ -59,27 +55,26 @@ public class InterviewController {
     public ResponseEntity<List<InterviewDto>> getInterviews(
             @AuthenticationPrincipal UserPrincipal userPrincipal) {
 
-
         String role = userPrincipal.getAuthorities()
                 .iterator()
                 .next()
                 .getAuthority()
                 .replace("ROLE_", "");
 
-
-        return ResponseEntity.ok(
+        List<InterviewDto> interviews =
                 interviewService.getInterviews(
                         userPrincipal.getId(),
                         role
-                )
-        );
+                );
+
+        return ResponseEntity.ok(interviews);
     }
 
 
-
-    // ============================
-    // Get Interview By ID
-    // ============================
+    // =========================================================
+    // GET INTERVIEW BY ID
+    // PARENT / SCHOOL_ADMIN / EDUCATION_ADMIN
+    // =========================================================
     @GetMapping("/{id}")
     @PreAuthorize(
             "hasAuthority('PARENT') or " +
@@ -89,18 +84,17 @@ public class InterviewController {
     public ResponseEntity<InterviewDto> getInterviewById(
             @PathVariable String id) {
 
+        InterviewDto interview =
+                interviewService.getInterviewById(id);
 
-        return ResponseEntity.ok(
-                interviewService.getInterviewById(id)
-        );
+        return ResponseEntity.ok(interview);
     }
 
 
-
-    // ============================
-    // Update Interview
+    // =========================================================
+    // UPDATE INTERVIEW
     // Only SCHOOL_ADMIN
-    // ============================
+    // =========================================================
     @PutMapping("/{id}")
     @PreAuthorize("hasAuthority('SCHOOL_ADMIN')")
     public ResponseEntity<InterviewDto> updateInterview(
@@ -108,37 +102,35 @@ public class InterviewController {
             @Valid @RequestBody InterviewDto dto,
             @AuthenticationPrincipal UserPrincipal userPrincipal) {
 
-
-        return ResponseEntity.ok(
+        InterviewDto updatedInterview =
                 interviewService.updateInterview(
                         userPrincipal.getId(),
                         id,
                         dto
-                )
-        );
+                );
+
+        return ResponseEntity.ok(updatedInterview);
     }
 
 
-
-    // ============================
-    // Delete Interview
+    // =========================================================
+    // DELETE INTERVIEW
     // Only SCHOOL_ADMIN
-    // ============================
+    // =========================================================
     @DeleteMapping("/{id}")
     @PreAuthorize("hasAuthority('SCHOOL_ADMIN')")
     public ResponseEntity<String> deleteInterview(
             @PathVariable String id,
             @AuthenticationPrincipal UserPrincipal userPrincipal) {
 
-
         interviewService.deleteInterview(
                 userPrincipal.getId(),
                 id
         );
-
 
         return ResponseEntity.ok(
                 "Interview deleted successfully."
         );
     }
 }
+
