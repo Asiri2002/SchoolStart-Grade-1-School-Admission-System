@@ -10,7 +10,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import schoolstart.backend.dto.ApplicationResponse;
-import schoolstart.backend.entity.ApplicationStatus;
 import schoolstart.backend.security.UserPrincipal;
 import schoolstart.backend.service.SchoolAdminApplicationService;
 
@@ -25,31 +24,16 @@ public class SchoolAdminApplicationController {
     @GetMapping
     public ResponseEntity<Page<ApplicationResponse>> getApplications(
             @AuthenticationPrincipal UserPrincipal userPrincipal,
-
-            @RequestParam(required = false)
-            ApplicationStatus status,
-
-            @RequestParam(required = false) String search,
-
-            @RequestParam(defaultValue = "0")
-            int page,
-
-            @RequestParam(defaultValue = "10")
-            int size
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size
     ) {
 
         return ResponseEntity.ok(
                 applicationService.getApplications(
                         userPrincipal.getId(),
-                        status,
-                        search,
                         page,
                         size
                 )
         );
     }
-
-
-
-
 }
