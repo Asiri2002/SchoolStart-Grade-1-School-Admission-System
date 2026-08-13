@@ -1,400 +1,621 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+
 import {
   View,
   Text,
-  StyleSheet,
-  TouchableOpacity,
   ScrollView,
+  StyleSheet,
   SafeAreaView,
+  TouchableOpacity,
   ActivityIndicator,
+  RefreshControl,
+  Alert,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+
 import { router } from 'expo-router';
 
-import { COLORS } from '../src/style/authStyles';
+import DashboardHeader from '../component/DashboardHeader';
+import ApplicationSummaryCard from '../component/ApplicationSummaryCard';
+import ChildCard from '../component/ChildCard';
+import ApplicationCard from '../component/ApplicationCard';
+import BottomNavigation from '../component/BottomNavigation';
+
+import { COLORS } from '../theme/colors';
+
 import { getAuthData } from '../src/storage/authStorage';
 import { logoutUser } from '../src/services/authService';
 
+import { fetchParentDashboard } from '../src/services/parentService';
+
+
+/*
+|--------------------------------------------------------------------------
+| Section Header
+|--------------------------------------------------------------------------
+*/
+
+const SectionHeader = ({
+  title,
+  actionLabel,
+  onAction,
+}) => {
+  return (
+    <View style={styles.sectionHeader}>
+
+      <Text style={styles.sectionTitle}>
+        {title}
+      </Text>
+
+      {actionLabel && (
+        <TouchableOpacity
+          onPress={onAction}
+          activeOpacity={0.7}
+        >
+          <Text style={styles.sectionAction}>
+            {actionLabel}
+          </Text>
+        </TouchableOpacity>
+      )}
+
+    </View>
+  );
+};
+
+
+/*
+|--------------------------------------------------------------------------
+| Parent Dashboard
+|--------------------------------------------------------------------------
+*/
+
 export default function ParentDashboardScreen() {
+
   const [userData, setUserData] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    const loadUser = async () => {
-      try {
-        const stored = await getAuthData();
+  const [dashboardData, setDashboardData] = useState(null);
 
-        if (stored) {
-          setUserData(stored);
-        }
-      } catch (error) {
-        console.error('Failed to load user data:', error);
-      } finally {
-        setIsLoading(false);
+  const [loading, setLoading] = useState(true);
+
+  const [refreshing, setRefreshing] = useState(false);
+
+  const [error, setError] = useState(null);
+
+  const [activeTab, setActiveTab] = useState('Home');
+
+
+  /*
+  |--------------------------------------------------------------------------
+  | Load Logged-in User
+  |--------------------------------------------------------------------------
+  */
+
+  const loadUser = useCallback(async () => {
+
+    try {
+
+      const stored = await getAuthData();
+
+      if (stored) {
+        setUserData(stored);
       }
-    };
 
-    loadUser();
+      return stored;
+
+    } catch (error) {
+
+      console.error(
+        'Failed to load user data:',
+        error
+      );
+
+      return null;
+    }
+
   }, []);
 
+
+  /*
+  |--------------------------------------------------------------------------
+  | Fetch Dashboard Data
+  |--------------------------------------------------------------------------
+  */
+
+  const fetchData = useCallback(
+    async (isRefresh = false) => {
+
+      if (isRefresh) {
+        setRefreshing(true);
+      } else {
+        setLoading(true);
+      }
+
+      setError(null);
+
+      try {
+
+        /*
+        |--------------------------------------------------------------------------
+        | Get logged-in user
+        |--------------------------------------------------------------------------
+        */
+
+        const storedUser = await loadUser();
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Get dashboard data from Spring Boot
+        |--------------------------------------------------------------------------
+        */
+
+        const data = await fetchParentDashboard();
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Save dashboard data
+        |--------------------------------------------------------------------------
+        */
+
+        setDashboardData({
+          ...data,
+
+          parentName:
+            data?.parentName ||
+            storedUser?.username ||
+            storedUser?.firstName ||
+            'Parent',
+        });
+
+      } catch (err) {
+
+        console.error(
+          'Dashboard fetch error:',
+          err
+        );
+
+        setError(
+          'Unable to load dashboard. Please try again.'
+        );
+
+      } finally {
+
+        setLoading(false);
+
+        setRefreshing(false);
+      }
+
+    },
+    [loadUser]
+  );
+
+
+  /*
+  |--------------------------------------------------------------------------
+  | Initial Dashboard Load
+  |--------------------------------------------------------------------------
+  */
+
+  useEffect(() => {
+
+    fetchData();
+
+  }, [fetchData]);
+
+
+  /*
+  |--------------------------------------------------------------------------
+  | Logout
+  |--------------------------------------------------------------------------
+  */
+
   const handleLogout = async () => {
+
     try {
+
       await logoutUser();
+
       router.replace('/LoginScreen');
+
     } catch (error) {
-      console.error('Logout failed:', error);
+
+      console.error(
+        'Logout failed:',
+        error
+      );
     }
   };
 
-  if (isLoading) {
+
+  /*
+  |--------------------------------------------------------------------------
+  | Loading Screen
+  |--------------------------------------------------------------------------
+  */
+
+  if (loading) {
+
     return (
-      <SafeAreaView style={styles.loadingContainer}>
+      <SafeAreaView
+        style={styles.centeredContainer}
+      >
+
         <ActivityIndicator
           size="large"
           color={COLORS.primary}
         />
 
         <Text style={styles.loadingText}>
-          Loading dashboard...
+          Loading your dashboard...
         </Text>
+
       </SafeAreaView>
     );
   }
 
-  return (
-    <SafeAreaView style={styles.container}>
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
+
+  /*
+  |--------------------------------------------------------------------------
+  | Error Screen
+  |--------------------------------------------------------------------------
+  */
+
+  if (error) {
+
+    return (
+      <SafeAreaView
+        style={styles.centeredContainer}
       >
-        {/* Header */}
-        <View style={styles.header}>
-          <View>
-            <Text style={styles.greeting}>
-              Welcome Back,
-            </Text>
 
-            <Text style={styles.username}>
-              {userData?.username || 'Parent User'}
-            </Text>
-          </View>
-
-          <TouchableOpacity
-            style={styles.logoutButton}
-            onPress={handleLogout}
-            activeOpacity={0.7}
-          >
-            <Ionicons
-              name="log-out-outline"
-              size={22}
-              color={COLORS.error}
-            />
-          </TouchableOpacity>
-        </View>
-
-        {/* User Card */}
-        <View style={styles.card}>
-          <View style={styles.cardHeader}>
-            <Ionicons
-              name="person-circle"
-              size={48}
-              color={COLORS.primary}
-            />
-
-            <View style={styles.userInfo}>
-              <Text style={styles.cardTitle}>
-                {userData?.username || 'Parent Profile'}
-              </Text>
-
-              <Text style={styles.cardSubtitle}>
-                {userData?.email || 'N/A'}
-              </Text>
-            </View>
-          </View>
-
-          <View style={styles.divider} />
-
-          {/* Role */}
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>
-              Role:
-            </Text>
-
-            <View style={styles.badge}>
-              <Text style={styles.badgeText}>
-                {userData?.role || 'ROLE_PARENT'}
-              </Text>
-            </View>
-          </View>
-
-          {/* User ID */}
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>
-              User ID:
-            </Text>
-
-            <Text style={styles.infoValue}>
-              {userData?.userId || 'N/A'}
-            </Text>
-          </View>
-        </View>
-
-        {/* Portal Section */}
-        <Text style={styles.sectionTitle}>
-          Grade 1 Admission Portal
+        <Text style={styles.errorIcon}>
+          ⚠️
         </Text>
 
-        {/* Modules */}
-        <View style={styles.grid}>
-          {/* Applications */}
-          <TouchableOpacity
-            style={styles.gridItem}
-            activeOpacity={0.8}
-          >
-            <Ionicons
-              name="document-text-outline"
-              size={32}
-              color={COLORS.primary}
+        <Text style={styles.errorText}>
+          {error}
+        </Text>
+
+        <TouchableOpacity
+          style={styles.retryButton}
+          onPress={() => fetchData()}
+          activeOpacity={0.8}
+        >
+
+          <Text style={styles.retryButtonText}>
+            Retry
+          </Text>
+
+        </TouchableOpacity>
+
+      </SafeAreaView>
+    );
+  }
+
+
+  /*
+  |--------------------------------------------------------------------------
+  | Dashboard Data
+  |--------------------------------------------------------------------------
+  */
+
+  const {
+    parentName,
+    totalApplications = 0,
+    children = [],
+    recentApplications = [],
+  } = dashboardData || {};
+
+
+  /*
+  |--------------------------------------------------------------------------
+  | Main UI
+  |--------------------------------------------------------------------------
+  */
+
+  return (
+    <SafeAreaView style={styles.safeArea}>
+
+      <View style={styles.screen}>
+
+        {/* ================================================================ */}
+        {/* Scrollable Dashboard */}
+        {/* ================================================================ */}
+
+        <ScrollView
+          style={styles.scroll}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={() => fetchData(true)}
+              colors={[COLORS.primary]}
+              tintColor={COLORS.primary}
+            />
+          }
+        >
+
+          {/* ============================================================ */}
+          {/* Dashboard Header */}
+          {/* ============================================================ */}
+
+          <DashboardHeader
+            parentName={parentName}
+
+            onBellPress={() =>
+              Alert.alert(
+                'Notifications',
+                'No new notifications.'
+              )
+            }
+          />
+
+
+          {/* ============================================================ */}
+          {/* Total Applications */}
+          {/* ============================================================ */}
+
+          <ApplicationSummaryCard
+            totalApplications={totalApplications}
+
+            onViewAll={() =>
+              setActiveTab('Applications')
+            }
+          />
+
+
+          {/* ============================================================ */}
+          {/* Dashboard Body */}
+          {/* ============================================================ */}
+
+          <View style={styles.body}>
+
+            {/* ========================================================== */}
+            {/* Children */}
+            {/* ========================================================== */}
+
+            <SectionHeader
+              title="Children"
+              actionLabel="+ Add Child"
+
+              onAction={() =>
+                Alert.alert(
+                  'Add Child',
+                  'This feature is coming soon.'
+                )
+              }
             />
 
-            <Text style={styles.gridItemTitle}>
-              Applications
-            </Text>
 
-            <Text style={styles.gridItemSub}>
-              Track & Apply
-            </Text>
-          </TouchableOpacity>
+            {children.length === 0 ? (
 
-          {/* Children */}
-          <TouchableOpacity
-            style={styles.gridItem}
-            activeOpacity={0.8}
-          >
-            <Ionicons
-              name="people-outline"
-              size={32}
-              color={COLORS.primary}
+              <Text style={styles.emptyText}>
+                No children added yet.
+              </Text>
+
+            ) : (
+
+              children.map((child, index) => (
+
+                <ChildCard
+                  key={child.id || index}
+                  child={child}
+                  index={index}
+
+                  onPress={() =>
+                    Alert.alert(
+                      'Child Details',
+                      `${child.firstName} ${child.lastName}`
+                    )
+                  }
+                />
+
+              ))
+
+            )}
+
+
+            {/* ========================================================== */}
+            {/* Recent Applications */}
+            {/* ========================================================== */}
+
+            <SectionHeader
+              title="Recent Applications"
+              actionLabel="See All"
+
+              onAction={() =>
+                setActiveTab('Applications')
+              }
             />
 
-            <Text style={styles.gridItemTitle}>
-              Children
-            </Text>
 
-            <Text style={styles.gridItemSub}>
-              Manage Profile
-            </Text>
-          </TouchableOpacity>
+            {recentApplications.length === 0 ? (
 
-          {/* Schools */}
-          <TouchableOpacity
-            style={styles.gridItem}
-            activeOpacity={0.8}
-          >
-            <Ionicons
-              name="school-outline"
-              size={32}
-              color={COLORS.primary}
-            />
+              <Text style={styles.emptyText}>
+                No applications submitted yet.
+              </Text>
 
-            <Text style={styles.gridItemTitle}>
-              Schools
-            </Text>
+            ) : (
 
-            <Text style={styles.gridItemSub}>
-              Search & Details
-            </Text>
-          </TouchableOpacity>
+              recentApplications.map((application) => (
 
-          {/* Documents */}
-          <TouchableOpacity
-            style={styles.gridItem}
-            activeOpacity={0.8}
-          >
-            <Ionicons
-              name="cloud-upload-outline"
-              size={32}
-              color={COLORS.primary}
-            />
+                <ApplicationCard
+                  key={application.applicationId}
+                  application={application}
 
-            <Text style={styles.gridItemTitle}>
-              Documents
-            </Text>
+                  onPress={() =>
+                    Alert.alert(
+                      'Application',
+                      `School: ${application.schoolName}\nStatus: ${application.status}`
+                    )
+                  }
+                />
 
-            <Text style={styles.gridItemSub}>
-              Upload Verification
-            </Text>
-          </TouchableOpacity>
-        </View>
-      </ScrollView>
+              ))
+
+            )}
+
+          </View>
+
+        </ScrollView>
+
+
+        {/* ================================================================ */}
+        {/* Bottom Navigation */}
+        {/* ================================================================ */}
+
+        <BottomNavigation
+          activeTab="Home"
+        />
+
+      </View>
+
     </SafeAreaView>
   );
 }
 
+
+/*
+|--------------------------------------------------------------------------
+| Styles
+|--------------------------------------------------------------------------
+*/
+
 const styles = StyleSheet.create({
-  loadingContainer: {
+
+  safeArea: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#F8FAFC',
+    backgroundColor: COLORS.primary,
   },
 
-  loadingText: {
-    marginTop: 12,
-    fontSize: 14,
-    color: COLORS.textMuted,
+  screen: {
+    flex: 1,
+    backgroundColor: COLORS.background,
   },
 
-  container: {
+  scroll: {
     flex: 1,
-    backgroundColor: '#F8FAFC',
   },
 
   scrollContent: {
-    padding: 20,
-    paddingBottom: 40,
+    paddingBottom: 20,
   },
 
-  header: {
+  body: {
+    paddingHorizontal: 20,
+    paddingTop: 24,
+  },
+
+
+  /*
+  |--------------------------------------------------------------------------
+  | Section Header
+  |--------------------------------------------------------------------------
+  */
+
+  sectionHeader: {
     flexDirection: 'row',
+    alignItems: 'center',
     justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 24,
-    marginTop: 10,
-  },
 
-  greeting: {
-    fontSize: 14,
-    color: COLORS.textMuted,
-  },
-
-  username: {
-    fontSize: 22,
-    fontWeight: '800',
-    color: COLORS.textDark,
-    marginTop: 2,
-  },
-
-  logoutButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 12,
-    backgroundColor: COLORS.errorBg,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-
-  card: {
-    backgroundColor: COLORS.white,
-    borderRadius: 16,
-    padding: 20,
-    marginBottom: 24,
-
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-
-    elevation: 3,
-  },
-
-  cardHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-
-  userInfo: {
-    marginLeft: 12,
-    flex: 1,
-  },
-
-  cardTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: COLORS.textDark,
-  },
-
-  cardSubtitle: {
-    fontSize: 14,
-    color: COLORS.textMuted,
-    marginTop: 2,
-  },
-
-  divider: {
-    height: 1,
-    backgroundColor: COLORS.inputBorder,
-    marginVertical: 16,
-  },
-
-  infoRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 10,
-  },
-
-  infoLabel: {
-    fontSize: 14,
-    color: COLORS.textMuted,
-  },
-
-  infoValue: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: COLORS.textDark,
-    maxWidth: '65%',
-  },
-
-  badge: {
-    backgroundColor: '#E0EDFF',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 8,
-  },
-
-  badgeText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: COLORS.primary,
+    marginBottom: 12,
+    marginTop: 8,
   },
 
   sectionTitle: {
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: '700',
-    color: COLORS.textDark,
-    marginBottom: 16,
+    color: COLORS.textPrimary,
   },
 
-  grid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
+  sectionAction: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: COLORS.primary,
   },
 
-  gridItem: {
-    width: '48%',
-    backgroundColor: COLORS.white,
-    borderRadius: 14,
-    padding: 16,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: COLORS.inputBorder,
-  },
 
-  gridItemTitle: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: COLORS.textDark,
-    marginTop: 10,
-  },
+  /*
+  |--------------------------------------------------------------------------
+  | Empty State
+  |--------------------------------------------------------------------------
+  */
 
-  gridItemSub: {
-    fontSize: 12,
+  emptyText: {
+    fontSize: 14,
     color: COLORS.textMuted,
-    marginTop: 2,
-  },
-});
 
+    fontStyle: 'italic',
+
+    marginBottom: 20,
+    marginLeft: 4,
+  },
+
+
+  /*
+  |--------------------------------------------------------------------------
+  | Loading
+  |--------------------------------------------------------------------------
+  */
+
+  centeredContainer: {
+    flex: 1,
+
+    alignItems: 'center',
+    justifyContent: 'center',
+
+    backgroundColor: COLORS.background,
+
+    padding: 24,
+  },
+
+  loadingText: {
+    marginTop: 16,
+
+    fontSize: 15,
+
+    color: COLORS.textSecondary,
+  },
+
+
+  /*
+  |--------------------------------------------------------------------------
+  | Error
+  |--------------------------------------------------------------------------
+  */
+
+  errorIcon: {
+    fontSize: 48,
+
+    marginBottom: 12,
+  },
+
+  errorText: {
+    fontSize: 15,
+
+    color: COLORS.textSecondary,
+
+    textAlign: 'center',
+
+    marginBottom: 24,
+  },
+
+  retryButton: {
+    backgroundColor: COLORS.primary,
+
+    paddingHorizontal: 36,
+    paddingVertical: 14,
+
+    borderRadius: 12,
+  },
+
+  retryButtonText: {
+    color: COLORS.white,
+
+    fontWeight: '700',
+
+    fontSize: 15,
+  },
+
+});
