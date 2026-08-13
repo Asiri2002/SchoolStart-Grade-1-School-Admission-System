@@ -14,7 +14,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 @RestController
 @RequestMapping("/api/documents")
-@PreAuthorize("hasAuthority('ROLE_PARENT')")
+@PreAuthorize("hasAuthority('PARENT')")
 @CrossOrigin(origins = "*")
 public class DocumentController {
 
@@ -31,4 +31,3 @@ public class DocumentController {
         return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
 }
-

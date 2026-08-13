@@ -30,12 +30,12 @@ public class NotificationService {
                 .timestamp(LocalDateTime.now())
                 .build();
 
-        NotificationModel savedNotification = notificationRepository.save(notification);
-
-        return MappingUtils.mapToNotificationDto(savedNotification);
+        return MappingUtils.mapToNotificationDto(
+                notificationRepository.save(notification)
+        );
     }
 
-    // Get all notifications for a user
+    // Get all notifications
     public List<NotificationDto> getNotificationsForUser(String userId) {
 
         return notificationRepository.findByUserIdOrderByTimestampDesc(userId)
@@ -44,7 +44,43 @@ public class NotificationService {
                 .collect(Collectors.toList());
     }
 
-    // Mark single notification as read
+    // Get unread notifications
+    public List<NotificationDto> getUnreadNotifications(String userId) {
+
+        return notificationRepository
+                .findByUserIdAndReadOrderByTimestampDesc(userId, false)
+                .stream()
+                .map(MappingUtils::mapToNotificationDto)
+                .collect(Collectors.toList());
+    }
+
+    // Get notifications by type
+    public List<NotificationDto> getNotificationsByType(String userId, String type) {
+
+        return notificationRepository
+                .findByUserIdAndTypeOrderByTimestampDesc(userId, type)
+                .stream()
+                .map(MappingUtils::mapToNotificationDto)
+                .collect(Collectors.toList());
+    }
+
+    // Search notifications
+    public List<NotificationDto> searchNotifications(String userId, String keyword) {
+
+        return notificationRepository
+                .findByUserIdAndMessageContainingIgnoreCase(userId, keyword)
+                .stream()
+                .map(MappingUtils::mapToNotificationDto)
+                .collect(Collectors.toList());
+    }
+
+    // Unread notification count
+    public long getUnreadCount(String userId) {
+
+        return notificationRepository.countByUserIdAndRead(userId, false);
+    }
+
+    // Mark one notification as read
     public NotificationDto markAsRead(String id, String userId) {
 
         NotificationModel notification = notificationRepository.findById(id)
@@ -56,18 +92,18 @@ public class NotificationService {
 
         if (!notification.getUserId().equals(userId)) {
             throw new BadRequestException(
-                    "You are not authorized to mark this notification as read."
+                    "You are not authorized to update this notification."
             );
         }
 
         notification.setRead(true);
 
-        NotificationModel updatedNotification = notificationRepository.save(notification);
-
-        return MappingUtils.mapToNotificationDto(updatedNotification);
+        return MappingUtils.mapToNotificationDto(
+                notificationRepository.save(notification)
+        );
     }
 
-    // Mark all notifications as read for a user
+    // Mark all notifications as read
     public void markAllAsRead(String userId) {
 
         List<NotificationModel> unreadNotifications =
