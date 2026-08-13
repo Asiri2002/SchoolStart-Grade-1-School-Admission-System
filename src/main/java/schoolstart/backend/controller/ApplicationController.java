@@ -21,7 +21,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/applications")
-@PreAuthorize("hasAuthority('PARENT')")
+@PreAuthorize("hasAnyAuthority('PARENT', 'SCHOOL_ADMIN')")
 @CrossOrigin(origins = "*")
 public class ApplicationController {
 
