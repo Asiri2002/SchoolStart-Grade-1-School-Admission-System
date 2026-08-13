@@ -5,27 +5,13 @@ import {
   clearAuthData,
 } from '../storage/authStorage';
 
-/**
- * Authenticate user
- *
- * POST /api/auth/login
- *
- * @param {string} usernameOrEmail
- * @param {string} password
- * @returns {Promise<Object>} Authentication response
- */
-export const loginUser = async (
-  usernameOrEmail,
-  password
-) => {
+
+export const loginUser = async (usernameOrEmail, password) => {
   try {
-    const response = await apiClient.post(
-      '/auth/login',
-      {
-        usernameOrEmail: usernameOrEmail.trim(),
-        password: password,
-      }
-    );
+    const response = await apiClient.post('/auth/login', {
+      usernameOrEmail: usernameOrEmail.trim(),
+      password,
+    });
 
     const authData = response.data;
 
@@ -38,28 +24,18 @@ export const loginUser = async (
   }
 };
 
-/**
- * Register a new parent
- *
- * POST /api/auth/register
- *
- * @param {Object} registerData
- * @returns {Promise<Object|string>} Server response
- */
+
 export const registerUser = async ({
   username,
   email,
   password,
 }) => {
   try {
-    const response = await apiClient.post(
-      '/auth/register',
-      {
-        username: username.trim(),
-        email: email.trim(),
-        password: password,
-      }
-    );
+    const response = await apiClient.post('/auth/register', {
+      username: username.trim(),
+      email: email.trim(),
+      password,
+    });
 
     return response.data;
   } catch (error) {
@@ -68,7 +44,7 @@ export const registerUser = async ({
 };
 
 /**
- * Logout user.
+ * Logout user
  *
  * Clears locally stored authentication data.
  */
@@ -76,56 +52,48 @@ export const logoutUser = async () => {
   try {
     await clearAuthData();
   } catch (error) {
-    console.error(
-      'Error during logout:',
-      error
-    );
-
-    throw error;
+    console.error('Logout failed:', error);
+    throw new Error('Unable to logout. Please try again.');
   }
 };
 
-/**
- * Convert API/Axios errors
- * into user-friendly messages.
- */
+
 const handleAuthError = (error) => {
   // Server responded with an error
   if (error.response) {
     const { status, data } = error.response;
 
-    // Backend returned plain text
+    // Backend returned a plain text message
     if (
       typeof data === 'string' &&
-      data.length > 0
+      data.trim().length > 0
     ) {
       return new Error(data);
     }
 
-    // Backend returned:
-    // { message: "..." }
+    // Backend returned { message: "..." }
     if (
       data &&
-      typeof data.message === 'string'
+      typeof data.message === 'string' &&
+      data.message.trim().length > 0
     ) {
       return new Error(data.message);
     }
 
-    // Handle HTTP status codes
     switch (status) {
       case 400:
         return new Error(
-          'Invalid input details provided. Please check your inputs.'
+          'Invalid input details. Please check your information.'
         );
 
       case 401:
         return new Error(
-          'Invalid username/email or password. Please try again.'
+          'Invalid username/email or password.'
         );
 
       case 403:
         return new Error(
-          'Access denied. Your account may be disabled.'
+          'Access denied. You do not have permission to perform this action.'
         );
 
       case 404:
@@ -145,21 +113,20 @@ const handleAuthError = (error) => {
 
       default:
         return new Error(
-          `Server returned error (${status}). Please try again later.`
+          `Request failed with status ${status}.`
         );
     }
   }
 
-  // Request was sent but no response
+  // Request was sent but no response was received
   if (error.request) {
     return new Error(
-      'Unable to connect to SchoolStart server. Please check your network connection.'
+      'Unable to connect to the SchoolStart server. Please check your network connection.'
     );
   }
 
-  // Other JavaScript/Axios error
+  // Other Axios/JavaScript error
   return new Error(
-    error.message ||
-      'An unexpected error occurred. Please try again.'
+    error.message || 'An unexpected error occurred.'
   );
 };
