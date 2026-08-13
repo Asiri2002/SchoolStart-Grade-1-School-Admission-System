@@ -23,7 +23,9 @@ public class SchoolController {
     // Get all schools
     // Parent + School Admin + Education Admin
     @GetMapping
-    @PreAuthorize("hasAnyRole('PARENT','SCHOOL_ADMIN','EDUCATION_ADMIN')")
+    @PreAuthorize("hasAuthority('PARENT') or " +
+            "hasAuthority('SCHOOL_ADMIN') or " +
+            "hasAuthority('EDUCATION_ADMIN')")
     public ResponseEntity<List<SchoolDto>> getAllSchools() {
         return ResponseEntity.ok(
                 schoolService.getAllSchools()
@@ -34,7 +36,9 @@ public class SchoolController {
     // Get school by ID
     // Parent + School Admin + Education Admin
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyRole('PARENT','SCHOOL_ADMIN','EDUCATION_ADMIN')")
+    @PreAuthorize("hasAuthority('PARENT') or " +
+            "hasAuthority('SCHOOL_ADMIN') or " +
+            "hasAuthority('EDUCATION_ADMIN')")
     public ResponseEntity<SchoolDto> getSchoolById(
             @PathVariable String id
     ) {
@@ -47,7 +51,9 @@ public class SchoolController {
     // Search schools
     // Parent + School Admin + Education Admin
     @GetMapping("/search")
-    @PreAuthorize("hasAnyRole('PARENT','SCHOOL_ADMIN','EDUCATION_ADMIN')")
+    @PreAuthorize("hasAuthority('PARENT') or " +
+            "hasAuthority('SCHOOL_ADMIN') or " +
+            "hasAuthority('EDUCATION_ADMIN')")
     public ResponseEntity<List<SchoolDto>> searchSchools(
             @RequestParam String query
     ) {
@@ -59,7 +65,9 @@ public class SchoolController {
 
     // Filter by district
     @GetMapping("/district/{district}")
-    @PreAuthorize("hasAnyRole('PARENT','SCHOOL_ADMIN','EDUCATION_ADMIN')")
+    @PreAuthorize("hasAuthority('PARENT') or " +
+            "hasAuthority('SCHOOL_ADMIN') or " +
+            "hasAuthority('EDUCATION_ADMIN')")
     public ResponseEntity<List<SchoolDto>> getSchoolsByDistrict(
             @PathVariable String district
     ) {
@@ -71,7 +79,9 @@ public class SchoolController {
 
     // Filter by school type
     @GetMapping("/type/{type}")
-    @PreAuthorize("hasAnyRole('PARENT','SCHOOL_ADMIN','EDUCATION_ADMIN')")
+    @PreAuthorize("hasAuthority('PARENT') or " +
+            "hasAuthority('SCHOOL_ADMIN') or " +
+            "hasAuthority('EDUCATION_ADMIN')")
     public ResponseEntity<List<SchoolDto>> getSchoolsByType(
             @PathVariable String type
     ) {
@@ -83,7 +93,9 @@ public class SchoolController {
 
     // Filter by active status
     @GetMapping("/status/{active}")
-    @PreAuthorize("hasAnyRole('PARENT','SCHOOL_ADMIN','EDUCATION_ADMIN')")
+    @PreAuthorize("hasAuthority('PARENT') or " +
+            "hasAuthority('SCHOOL_ADMIN') or " +
+            "hasAuthority('EDUCATION_ADMIN')")
     public ResponseEntity<List<SchoolDto>> getSchoolsByStatus(
             @PathVariable boolean active
     ) {
@@ -96,7 +108,7 @@ public class SchoolController {
     // Create school
     // Only Education Admin
     @PostMapping
-    @PreAuthorize("hasRole('EDUCATION_ADMIN')")
+    @PreAuthorize("hasAuthority('EDUCATION_ADMIN')")
     public ResponseEntity<SchoolDto> createSchool(
             @Valid @RequestBody SchoolDto schoolDto
     ) {
@@ -114,7 +126,8 @@ public class SchoolController {
     // Update schools
     // School Admin + Education Admin
     @PutMapping("/{id}")
-    @PreAuthorize("hasAnyRole('SCHOOL_ADMIN','EDUCATION_ADMIN')")
+    @PreAuthorize("hasAuthority('SCHOOL_ADMIN') or " +
+            "hasAuthority('EDUCATION_ADMIN')")
     public ResponseEntity<SchoolDto> updateSchool(
             @PathVariable String id,
             @Valid @RequestBody SchoolDto schoolDto
@@ -129,7 +142,7 @@ public class SchoolController {
     // Delete school
     // Only Education Admin
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('EDUCATION_ADMIN')")
+    @PreAuthorize("hasAuthority('EDUCATION_ADMIN')")
     public ResponseEntity<String> deleteSchool(
             @PathVariable String id
     ) {
@@ -145,7 +158,7 @@ public class SchoolController {
     // Activate / Deactivate school
     // Only Education Admin
     @PatchMapping("/{id}/status")
-    @PreAuthorize("hasRole('EDUCATION_ADMIN')")
+    @PreAuthorize("hasAuthority('EDUCATION_ADMIN')")
     public ResponseEntity<SchoolDto> changeSchoolStatus(
             @PathVariable String id
     ) {

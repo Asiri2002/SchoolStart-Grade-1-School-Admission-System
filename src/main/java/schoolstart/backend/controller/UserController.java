@@ -19,21 +19,21 @@ public class UserController {
 
     // Get All Users
     @GetMapping
-    @PreAuthorize("hasRole('EDUCATION_ADMIN')")
+    @PreAuthorize("hasAuthority('EDUCATION_ADMIN')")
     public ResponseEntity<List<UserResponse>> getAllUsers() {
         return ResponseEntity.ok(userService.getAllUsers());
     }
 
     // Get User By ID
     @GetMapping("/{id}")
-    @PreAuthorize("hasRole('EDUCATION_ADMIN')")
+    @PreAuthorize("hasAuthority('EDUCATION_ADMIN')")
     public ResponseEntity<UserResponse> getUserById(@PathVariable String id) {
         return ResponseEntity.ok(userService.getUserById(id));
     }
 
     // Update User
     @PutMapping("/{id}")
-    @PreAuthorize("hasRole('EDUCATION_ADMIN')")
+    @PreAuthorize("hasAuthority('EDUCATION_ADMIN')")
     public ResponseEntity<UserResponse> updateUser(
             @PathVariable String id,
             @RequestBody RegisterRequest request) {
@@ -43,7 +43,7 @@ public class UserController {
 
     // Delete User
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('EDUCATION_ADMIN')")
+    @PreAuthorize("hasAuthority('EDUCATION_ADMIN')")
     public ResponseEntity<String> deleteUser(@PathVariable String id) {
 
         userService.deleteUser(id);

@@ -6,18 +6,28 @@ import schoolstart.backend.security.JwtAuthenticationFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
+
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
+
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
+
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+
+import java.util.List;
 
 @Configuration
 @EnableWebSecurity
@@ -35,141 +45,284 @@ public class SecurityConfig {
         this.jwtAuthenticationFilter = jwtAuthenticationFilter;
     }
 
-    @Bean
-    public AuthenticationProvider authenticationProvider() {
-        DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
-        authProvider.setUserDetailsService(userDetailsService);
-        authProvider.setPasswordEncoder(passwordEncoder());
-        return authProvider;
-    }
-
-    @Bean
-    public AuthenticationManager authenticationManager(
-            AuthenticationConfiguration config
-    ) throws Exception {
-        return config.getAuthenticationManager();
-    }
+    // =========================================================
+    // PASSWORD ENCODER
+    // =========================================================
 
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
 
+    // =========================================================
+    // AUTHENTICATION PROVIDER
+    // =========================================================
+
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    public AuthenticationProvider authenticationProvider() {
+
+        DaoAuthenticationProvider authProvider =
+                new DaoAuthenticationProvider();
+
+        authProvider.setUserDetailsService(userDetailsService);
+        authProvider.setPasswordEncoder(passwordEncoder());
+
+        return authProvider;
+    }
+
+    // =========================================================
+    // AUTHENTICATION MANAGER
+    // =========================================================
+
+    @Bean
+    public AuthenticationManager authenticationManager(
+            AuthenticationConfiguration config
+    ) throws Exception {
+
+        return config.getAuthenticationManager();
+    }
+
+    // =========================================================
+    // CORS
+    // =========================================================
+
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+
+        CorsConfiguration configuration =
+                new CorsConfiguration();
+
+        /*
+         * Your React Native Web application is running on
+         * localhost:8081.
+         *
+         * Using localhost:* also allows Expo to use another
+         * development port.
+         */
+        configuration.setAllowedOriginPatterns(
+                List.of("http://localhost:*")
+        );
+
+        configuration.setAllowedMethods(
+                List.of(
+                        "GET",
+                        "POST",
+                        "PUT",
+                        "DELETE",
+                        "OPTIONS"
+                )
+        );
+
+        configuration.setAllowedHeaders(
+                List.of("*")
+        );
+
+        configuration.setAllowCredentials(true);
+
+        UrlBasedCorsConfigurationSource source =
+                new UrlBasedCorsConfigurationSource();
+
+        source.registerCorsConfiguration(
+                "/**",
+                configuration
+        );
+
+        return source;
+    }
+
+    // =========================================================
+    // SECURITY FILTER CHAIN
+    // =========================================================
+
+    @Bean
+    public SecurityFilterChain securityFilterChain(
+            HttpSecurity http
+    ) throws Exception {
 
         http
+
+                // Disable CSRF because we use JWT
                 .csrf(csrf -> csrf.disable())
 
-                .sessionManagement(session ->
-                        session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+                // Enable CORS
+                .cors(cors ->
+                        cors.configurationSource(
+                                corsConfigurationSource()
+                        )
                 )
+
+                // JWT = stateless
+                .sessionManagement(session ->
+                        session.sessionCreationPolicy(
+                                SessionCreationPolicy.STATELESS
+                        )
+                )
+
+                // =================================================
+                // AUTHORIZATION
+                // =================================================
 
                 .authorizeHttpRequests(auth -> auth
 
-                        // =========================
-                        // PUBLIC APIs
-                        // =========================
+                        // -----------------------------------------
+                        // CORS PREFLIGHT
+                        // -----------------------------------------
 
-                        .requestMatchers("/api/auth/**")
+                        .requestMatchers(
+                                HttpMethod.OPTIONS,
+                                "/**"
+                        )
                         .permitAll()
 
-                        // Swagger
+                        // -----------------------------------------
+                        // AUTH
+                        // -----------------------------------------
+
+                        .requestMatchers(
+                                "/api/auth/**"
+                        )
+                        .permitAll()
+
+                        // -----------------------------------------
+                        // SWAGGER
+                        // -----------------------------------------
+
                         .requestMatchers(
                                 "/v3/api-docs/**",
                                 "/swagger-ui/**",
                                 "/swagger-ui.html",
                                 "/swagger-resources/**",
                                 "/webjars/**"
-                        ).permitAll()
+                        )
+                        .permitAll()
 
-                        // =========================
-                        // SCHOOL APIs
-                        // =========================
+                        // -----------------------------------------
+                        // PARENT
+                        // -----------------------------------------
 
-                        // View Schools
-                        .requestMatchers(HttpMethod.GET, "/api/schools/**")
-                        .hasAnyRole(
+                        .requestMatchers(
+                                "/api/parent/**"
+                        )
+                        .hasAuthority("PARENT")
+
+                        // -----------------------------------------
+                        // CHILD
+                        // -----------------------------------------
+
+                        .requestMatchers(
+                                "/api/children/**"
+                        )
+                        .hasAuthority("PARENT")
+
+                        // -----------------------------------------
+                        // SCHOOL
+                        // -----------------------------------------
+
+                        .requestMatchers(
+                                HttpMethod.GET,
+                                "/api/schools/**"
+                        )
+                        .hasAnyAuthority(
                                 "PARENT",
                                 "SCHOOL_ADMIN",
                                 "EDUCATION_ADMIN"
                         )
 
-                        // Add School
-                        .requestMatchers(HttpMethod.POST, "/api/schools/**")
-                        .hasRole("EDUCATION_ADMIN")
+                        .requestMatchers(
+                                HttpMethod.POST,
+                                "/api/schools/**"
+                        )
+                        .hasAuthority("EDUCATION_ADMIN")
 
-                        // Update School
-                        .requestMatchers(HttpMethod.PUT, "/api/schools/**")
-                        .hasAnyRole(
+                        .requestMatchers(
+                                HttpMethod.PUT,
+                                "/api/schools/**"
+                        )
+                        .hasAnyAuthority(
                                 "SCHOOL_ADMIN",
                                 "EDUCATION_ADMIN"
                         )
 
-                        // Delete School
-                        .requestMatchers(HttpMethod.DELETE, "/api/schools/**")
-                        .hasRole("EDUCATION_ADMIN")
+                        .requestMatchers(
+                                HttpMethod.DELETE,
+                                "/api/schools/**"
+                        )
+                        .hasAuthority("EDUCATION_ADMIN")
 
-                        // =========================
-                        // SCHOOL ADMIN APIs
-                        // =========================
+                        // -----------------------------------------
+                        // SCHOOL ADMIN
+                        // -----------------------------------------
 
-                        // Get School Admin(s)
-                                .requestMatchers(HttpMethod.GET, "/api/school-admins/**")
-                                .hasAuthority("EDUCATION_ADMIN")
+                        .requestMatchers(
+                                HttpMethod.GET,
+                                "/api/school-admins/**"
+                        )
+                        .hasAuthority("EDUCATION_ADMIN")
 
-                        // Create School Admin
-                                .requestMatchers(HttpMethod.POST, "/api/school-admins/**")
-                                .hasAuthority("EDUCATION_ADMIN")
+                        .requestMatchers(
+                                HttpMethod.POST,
+                                "/api/school-admins/**"
+                        )
+                        .hasAuthority("EDUCATION_ADMIN")
 
-                        // Update School Admin
-                                .requestMatchers(HttpMethod.PUT, "/api/school-admins/**")
-                                .hasAuthority("EDUCATION_ADMIN")
+                        .requestMatchers(
+                                HttpMethod.PUT,
+                                "/api/school-admins/**"
+                        )
+                        .hasAuthority("EDUCATION_ADMIN")
 
-                        // Delete School Admin
-                                .requestMatchers(HttpMethod.DELETE, "/api/school-admins/**")
-                                .hasAuthority("EDUCATION_ADMIN")
+                        .requestMatchers(
+                                HttpMethod.DELETE,
+                                "/api/school-admins/**"
+                        )
+                        .hasAuthority("EDUCATION_ADMIN")
 
+                        // -----------------------------------------
+                        // INTERVIEWS
+                        // -----------------------------------------
 
+                        .requestMatchers(
+                                HttpMethod.GET,
+                                "/api/interviews/**"
+                        )
+                        .hasAnyAuthority(
+                                "PARENT",
+                                "SCHOOL_ADMIN",
+                                "EDUCATION_ADMIN"
+                        )
 
+                        .requestMatchers(
+                                HttpMethod.POST,
+                                "/api/interviews/**"
+                        )
+                        .hasAuthority("SCHOOL_ADMIN")
 
-                        // =========================
-                        // Interviews APIs
-                        // =========================
+                        .requestMatchers(
+                                HttpMethod.PUT,
+                                "/api/interviews/**"
+                        )
+                        .hasAuthority("SCHOOL_ADMIN")
 
+                        .requestMatchers(
+                                HttpMethod.DELETE,
+                                "/api/interviews/**"
+                        )
+                        .hasAuthority("SCHOOL_ADMIN")
 
-                                // Get Interviews
-                                .requestMatchers(HttpMethod.GET, "/api/interviews/**")
-                                .hasAnyAuthority(
-                                        "PARENT",
-                                        "SCHOOL_ADMIN",
-                                        "EDUCATION_ADMIN"
-                                )
-
-                                // Create Interview
-                                .requestMatchers(HttpMethod.POST, "/api/interviews/**")
-                                .hasAuthority("SCHOOL_ADMIN")
-
-                                // Update Interview
-                                .requestMatchers(HttpMethod.PUT, "/api/interviews/**")
-                                .hasAuthority("SCHOOL_ADMIN")
-
-                                // Delete Interview
-                                .requestMatchers(HttpMethod.DELETE, "/api/interviews/**")
-                                .hasAuthority("SCHOOL_ADMIN")
-
-
-
-                        // =========================
-                        // OTHER APIs
-                        // =========================
+                        // -----------------------------------------
+                        // EVERYTHING ELSE
+                        // -----------------------------------------
 
                         .anyRequest()
                         .authenticated()
                 )
 
-                .authenticationProvider(authenticationProvider())
+                // Authentication provider
+                .authenticationProvider(
+                        authenticationProvider()
+                )
 
+                // JWT filter
                 .addFilterBefore(
                         jwtAuthenticationFilter,
                         UsernamePasswordAuthenticationFilter.class
