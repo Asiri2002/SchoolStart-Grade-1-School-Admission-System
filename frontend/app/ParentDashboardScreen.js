@@ -105,28 +105,13 @@ export default function ParentDashboardScreen() {
       setError(null);
 
       try {
-        /*
-        |--------------------------------------------------------------------------
-        | Get logged-in user
-        |--------------------------------------------------------------------------
-        */
-
+        // Get logged-in user
         const storedUser = await loadUser();
 
-        /*
-        |--------------------------------------------------------------------------
-        | Get dashboard data from Spring Boot
-        |--------------------------------------------------------------------------
-        */
-
+        // Get dashboard data from Spring Boot
         const data = await fetchParentDashboard();
 
-        /*
-        |--------------------------------------------------------------------------
-        | Save dashboard data
-        |--------------------------------------------------------------------------
-        */
-
+        // Save dashboard data
         setDashboardData({
           ...data,
 
@@ -151,11 +136,8 @@ export default function ParentDashboardScreen() {
 
   /*
   |--------------------------------------------------------------------------
-  | Refresh Dashboard Whenever Screen Gets Focus
+  | Load Dashboard
   |--------------------------------------------------------------------------
-  |
-  | This is important after returning from AddChildScreen.
-  |
   */
 
   useEffect(() => {
@@ -170,6 +152,23 @@ export default function ParentDashboardScreen() {
 
   const handleAddChild = () => {
     router.push("/AddChildScreen");
+  };
+
+  /*
+  |--------------------------------------------------------------------------
+  | Open School Search Screen
+  |--------------------------------------------------------------------------
+  */
+
+  const handleChildPress = (child) => {
+    router.push({
+      pathname: "/search-schools",
+
+      params: {
+        childId: child.id,
+        childName: `${child.firstName || ""} ${child.lastName || ""}`.trim(),
+      },
+    });
   };
 
   /*
@@ -250,10 +249,6 @@ export default function ParentDashboardScreen() {
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.screen}>
-        {/* ================================================================ */}
-        {/* Scrollable Dashboard */}
-        {/* ================================================================ */}
-
         <ScrollView
           style={styles.scroll}
           contentContainerStyle={styles.scrollContent}
@@ -267,9 +262,7 @@ export default function ParentDashboardScreen() {
             />
           }
         >
-          {/* ============================================================ */}
           {/* Dashboard Header */}
-          {/* ============================================================ */}
 
           <DashboardHeader
             parentName={parentName}
@@ -278,23 +271,17 @@ export default function ParentDashboardScreen() {
             }
           />
 
-          {/* ============================================================ */}
           {/* Total Applications */}
-          {/* ============================================================ */}
 
           <ApplicationSummaryCard
             totalApplications={totalApplications}
             onViewAll={() => setActiveTab("Applications")}
           />
 
-          {/* ============================================================ */}
           {/* Dashboard Body */}
-          {/* ============================================================ */}
 
           <View style={styles.body}>
-            {/* ========================================================== */}
             {/* Children */}
-            {/* ========================================================== */}
 
             <SectionHeader
               title="Children"
@@ -310,19 +297,12 @@ export default function ParentDashboardScreen() {
                   key={child.id || index}
                   child={child}
                   index={index}
-                  onPress={() =>
-                    Alert.alert(
-                      "Child Details",
-                      `${child.firstName} ${child.lastName}`,
-                    )
-                  }
+                  onPress={() => handleChildPress(child)}
                 />
               ))
             )}
 
-            {/* ========================================================== */}
             {/* Recent Applications */}
-            {/* ========================================================== */}
 
             <SectionHeader
               title="Recent Applications"
@@ -351,9 +331,7 @@ export default function ParentDashboardScreen() {
           </View>
         </ScrollView>
 
-        {/* ================================================================ */}
         {/* Bottom Navigation */}
-        {/* ================================================================ */}
 
         <BottomNavigation activeTab="Home" />
       </View>
