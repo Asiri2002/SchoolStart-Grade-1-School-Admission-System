@@ -1,49 +1,45 @@
-import React from 'react';
 
 import {
-  View,
+  Platform,
+  StyleSheet,
   Text,
   TouchableOpacity,
-  StyleSheet,
-  Platform,
-} from 'react-native';
+  View,
+} from "react-native";
 
-import { Ionicons } from '@expo/vector-icons';
-import { router } from 'expo-router';
+import { Ionicons } from "@expo/vector-icons";
+import { router } from "expo-router";
 
-import { COLORS } from '../theme/colors';
+import { COLORS } from "../theme/colors";
 
 const TABS = [
   {
-    key: 'Home',
-    icon: 'home',
-    iconOutline: 'home-outline',
-    route: '/ParentDashboardScreen',
+    key: "Home",
+    icon: "home",
+    iconOutline: "home-outline",
+    route: "/ParentDashboardScreen",
   },
   {
-    key: 'Applications',
-    icon: 'document-text',
-    iconOutline: 'document-text-outline',
-    route: '/ApplicationsScreen',
+    key: "Applications",
+    icon: "document-text",
+    iconOutline: "document-text-outline",
+    route: "/ApplicationsScreen",
   },
   {
-    key: 'Children',
-    icon: 'people',
-    iconOutline: 'people-outline',
-    route: '/ChildrenScreen',
+    key: "Children",
+    icon: "people",
+    iconOutline: "people-outline",
+    route: "/AddChildScreen",
   },
   {
-    key: 'Profile',
-    icon: 'person',
-    iconOutline: 'person-outline',
-    route: '/profileScreen',
+    key: "Profile",
+    icon: "person",
+    iconOutline: "person-outline",
+    route: "/profileScreen",
   },
 ];
 
-const BottomNavigation = ({
-  activeTab = 'Home',
-  onTabPress,
-}) => {
+const BottomNavigation = ({ activeTab = "Home", onTabPress }) => {
   const handleTabPress = (tabKey) => {
     // If parent wants to handle the tab press
     if (onTabPress) {
@@ -51,9 +47,7 @@ const BottomNavigation = ({
       return;
     }
 
-    const selectedTab = TABS.find(
-      (item) => item.key === tabKey
-    );
+    const selectedTab = TABS.find((item) => item.key === tabKey);
 
     if (!selectedTab) {
       return;
@@ -86,31 +80,16 @@ const BottomNavigation = ({
             }}
           >
             <Ionicons
-              name={
-                isActive
-                  ? tab.icon
-                  : tab.iconOutline
-              }
+              name={isActive ? tab.icon : tab.iconOutline}
               size={24}
-              color={
-                isActive
-                  ? COLORS.primary
-                  : COLORS.textMuted
-              }
+              color={isActive ? COLORS.primary : COLORS.textMuted}
             />
 
-            <Text
-              style={[
-                styles.label,
-                isActive && styles.labelActive,
-              ]}
-            >
+            <Text style={[styles.label, isActive && styles.labelActive]}>
               {tab.key}
             </Text>
 
-            {isActive && (
-              <View style={styles.activeDot} />
-            )}
+            {isActive && <View style={styles.activeDot} />}
           </TouchableOpacity>
         );
       })}
@@ -120,7 +99,7 @@ const BottomNavigation = ({
 
 const styles = StyleSheet.create({
   container: {
-    flexDirection: 'row',
+    flexDirection: "row",
 
     backgroundColor: COLORS.card,
 
@@ -129,12 +108,10 @@ const styles = StyleSheet.create({
 
     paddingTop: 10,
 
-    paddingBottom:
-      Platform.OS === 'ios' ? 20 : 10,
+    paddingBottom: Platform.OS === "ios" ? 20 : 10,
 
     // Fix React Native Web shadow warning
-    boxShadow:
-      '0px -3px 8px rgba(0, 0, 0, 0.08)',
+    boxShadow: "0px -3px 8px rgba(0, 0, 0, 0.08)",
 
     elevation: 12,
   },
@@ -142,10 +119,10 @@ const styles = StyleSheet.create({
   tab: {
     flex: 1,
 
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
 
-    position: 'relative',
+    position: "relative",
 
     paddingVertical: 4,
   },
@@ -157,17 +134,17 @@ const styles = StyleSheet.create({
 
     marginTop: 4,
 
-    fontWeight: '500',
+    fontWeight: "500",
   },
 
   labelActive: {
     color: COLORS.primary,
 
-    fontWeight: '700',
+    fontWeight: "700",
   },
 
   activeDot: {
-    position: 'absolute',
+    position: "absolute",
 
     top: 0,
 

@@ -1,157 +1,102 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const KEYS = {
-  ACCESS_TOKEN: '@schoolstart_access_token',
-  USER_ID: '@schoolstart_user_id',
-  USERNAME: '@schoolstart_username',
-  EMAIL: '@schoolstart_email',
-  ROLE: '@schoolstart_role',
-  TOKEN_TYPE: '@schoolstart_token_type',
+  ACCESS_TOKEN: "@schoolstart_access_token",
+  USER_ID: "@schoolstart_user_id",
+  USERNAME: "@schoolstart_username",
+  EMAIL: "@schoolstart_email",
+  ROLE: "@schoolstart_role",
+  TOKEN_TYPE: "@schoolstart_token_type",
 };
 
-/**
- * Save authentication data received from the backend.
- *
- * Expected authResponse:
- * {
- *   accessToken,
- *   tokenType,
- *   username,
- *   email,
- *   role,
- *   userId
- * }
- */
 export const saveAuthData = async (authResponse) => {
   try {
     const {
       accessToken,
-      tokenType = 'Bearer',
+      tokenType = "Bearer",
       username,
       email,
       role,
       userId,
     } = authResponse;
 
-    const storageItems = [
-      [KEYS.ACCESS_TOKEN, accessToken || ''],
-      [KEYS.TOKEN_TYPE, tokenType || 'Bearer'],
-      [KEYS.USERNAME, username || ''],
-      [KEYS.EMAIL, email || ''],
-      [KEYS.ROLE, role || ''],
-      [KEYS.USER_ID, userId || ''],
-    ];
+    if (!accessToken) {
+      throw new Error("No access token received from backend.");
+    }
 
-    await AsyncStorage.multiSet(storageItems);
+    await AsyncStorage.multiSet([
+      [KEYS.ACCESS_TOKEN, accessToken],
+      [KEYS.TOKEN_TYPE, tokenType || "Bearer"],
+      [KEYS.USERNAME, username || ""],
+      [KEYS.EMAIL, email || ""],
+      [KEYS.ROLE, role || ""],
+      [KEYS.USER_ID, userId || ""],
+    ]);
 
-    console.log('Authentication data saved successfully.');
+    console.log("Authentication data saved successfully.");
   } catch (error) {
-    console.error(
-      'Error saving authentication data:',
-      error
-    );
-
+    console.error("Error saving authentication data:", error);
     throw error;
   }
 };
 
-/**
- * Get the stored JWT access token.
- */
 export const getAccessToken = async () => {
   try {
-    const token = await AsyncStorage.getItem(
-      KEYS.ACCESS_TOKEN
-    );
-
-    return token;
+    return await AsyncStorage.getItem(KEYS.ACCESS_TOKEN);
   } catch (error) {
-    console.error(
-      'Error getting access token:',
-      error
-    );
-
+    console.error("Error getting access token:", error);
     return null;
   }
 };
 
-/**
- * Get all stored authentication data.
- */
+export const getTokenType = async () => {
+  try {
+    return (await AsyncStorage.getItem(KEYS.TOKEN_TYPE)) || "Bearer";
+  } catch (error) {
+    return "Bearer";
+  }
+};
+
 export const getAuthData = async () => {
   try {
-    const keys = [
-      KEYS.ACCESS_TOKEN,
-      KEYS.TOKEN_TYPE,
-      KEYS.USERNAME,
-      KEYS.EMAIL,
-      KEYS.ROLE,
-      KEYS.USER_ID,
-    ];
+    const results = await AsyncStorage.multiGet(Object.values(KEYS));
 
-    const results = await AsyncStorage.multiGet(keys);
-
-    const authData = {};
+    const data = {};
 
     results.forEach(([key, value]) => {
       if (key === KEYS.ACCESS_TOKEN) {
-        authData.accessToken = value;
-      }
-
-      if (key === KEYS.TOKEN_TYPE) {
-        authData.tokenType = value;
-      }
-
-      if (key === KEYS.USERNAME) {
-        authData.username = value;
-      }
-
-      if (key === KEYS.EMAIL) {
-        authData.email = value;
-      }
-
-      if (key === KEYS.ROLE) {
-        authData.role = value;
-      }
-
-      if (key === KEYS.USER_ID) {
-        authData.userId = value;
+        data.accessToken = value;
+      } else if (key === KEYS.TOKEN_TYPE) {
+        data.tokenType = value;
+      } else if (key === KEYS.USERNAME) {
+        data.username = value;
+      } else if (key === KEYS.EMAIL) {
+        data.email = value;
+      } else if (key === KEYS.ROLE) {
+        data.role = value;
+      } else if (key === KEYS.USER_ID) {
+        data.userId = value;
       }
     });
 
-    // No token means the user is not authenticated.
-    if (!authData.accessToken) {
+    if (!data.accessToken) {
       return null;
     }
 
-    return authData;
+    return data;
   } catch (error) {
-    console.error(
-      'Error getting authentication data:',
-      error
-    );
-
+    console.error("Error getting authentication data:", error);
     return null;
   }
 };
 
-/**
- * Clear all authentication data during logout.
- */
 export const clearAuthData = async () => {
   try {
-    const keys = Object.values(KEYS);
+    await AsyncStorage.multiRemove(Object.values(KEYS));
 
-    await AsyncStorage.multiRemove(keys);
-
-    console.log('Authentication data cleared successfully.');
+    console.log("Authentication data cleared successfully.");
   } catch (error) {
-    console.error(
-      'Error clearing authentication data:',
-      error
-    );
-
+    console.error("Error clearing authentication data:", error);
     throw error;
   }
 };
-
