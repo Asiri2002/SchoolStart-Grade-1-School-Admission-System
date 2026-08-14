@@ -3,6 +3,7 @@ import DateTimePicker from "@react-native-community/datetimepicker";
 import * as ImagePicker from "expo-image-picker";
 import { router } from "expo-router";
 import { useState } from "react";
+
 import {
     Alert,
     Image,
@@ -17,7 +18,12 @@ import {
 
 import FormDropdown from "../component/FormDropdown";
 import FormInput from "../component/FormInput";
+
+// IMPORTANT:
+// AddChildScreen.js is inside app/
+// src/ is one level above app/
 import { getAccessToken } from "../src/storage/authStorage";
+
 import { COLORS } from "../theme";
 
 const API_URL = "http://localhost:8080/api";
@@ -70,6 +76,7 @@ const AddChildScreen = () => {
             "Permission Required",
             "Please allow photo library access.",
           );
+
           return;
         }
       }
@@ -118,9 +125,11 @@ const AddChildScreen = () => {
 
     if (selectedDate && isValidDate(selectedDate)) {
       const today = new Date();
+
       today.setHours(0, 0, 0, 0);
 
       const selected = new Date(selectedDate);
+
       selected.setHours(0, 0, 0, 0);
 
       if (selected > today) {
@@ -210,7 +219,7 @@ const AddChildScreen = () => {
       return;
     }
 
-    // Make sure JavaScript did not correct an invalid date
+    // Prevent JavaScript from correcting invalid dates
     if (
       selectedDate.getFullYear() !== year ||
       selectedDate.getMonth() !== month - 1 ||
@@ -228,6 +237,7 @@ const AddChildScreen = () => {
 
     // Prevent future dates
     const today = new Date();
+
     today.setHours(0, 0, 0, 0);
 
     if (selectedDate > today) {
@@ -259,7 +269,9 @@ const AddChildScreen = () => {
     }
 
     const day = String(date.getDate()).padStart(2, "0");
+
     const month = String(date.getMonth() + 1).padStart(2, "0");
+
     const year = date.getFullYear();
 
     return `${day}/${month}/${year}`;
@@ -271,7 +283,9 @@ const AddChildScreen = () => {
     }
 
     const year = date.getFullYear();
+
     const month = String(date.getMonth() + 1).padStart(2, "0");
+
     const day = String(date.getDate()).padStart(2, "0");
 
     return `${year}-${month}-${day}`;
@@ -284,7 +298,9 @@ const AddChildScreen = () => {
     }
 
     const year = date.getFullYear();
+
     const month = String(date.getMonth() + 1).padStart(2, "0");
+
     const day = String(date.getDate()).padStart(2, "0");
 
     return `${year}-${month}-${day}`;
@@ -308,12 +324,14 @@ const AddChildScreen = () => {
     // First name
     if (!firstName.trim()) {
       newErrors.firstName = "First name is required.";
+
       valid = false;
     }
 
     // Last name
     if (!lastName.trim()) {
       newErrors.lastName = "Last name is required.";
+
       valid = false;
     }
 
@@ -321,22 +339,27 @@ const AddChildScreen = () => {
     if (!birthCertificateNumber.trim()) {
       newErrors.birthCertificateNumber =
         "Birth certificate number is required.";
+
       valid = false;
     }
 
     // Date of birth
     if (!isValidDate(dateOfBirth)) {
       newErrors.dateOfBirth = "Date of birth is required.";
+
       valid = false;
     } else {
       const today = new Date();
+
       today.setHours(0, 0, 0, 0);
 
       const selectedDate = new Date(dateOfBirth);
+
       selectedDate.setHours(0, 0, 0, 0);
 
       if (selectedDate > today) {
         newErrors.dateOfBirth = "Date of birth cannot be in the future.";
+
         valid = false;
       }
     }
@@ -344,6 +367,7 @@ const AddChildScreen = () => {
     // Gender
     if (!gender) {
       newErrors.gender = "Please select gender.";
+
       valid = false;
     }
 
@@ -379,7 +403,10 @@ const AddChildScreen = () => {
     try {
       setIsSaving(true);
 
-      // Get JWT
+      // =====================================================
+      // Get JWT token
+      // =====================================================
+
       const token = await getAccessToken();
 
       console.log("JWT token exists:", !!token);
@@ -394,27 +421,37 @@ const AddChildScreen = () => {
       }
 
       // =====================================================
-      // IMPORTANT:
-      // These names MUST match your Spring Boot DTO
+      // Child Data
       // =====================================================
 
       const childData = {
         firstName: firstName.trim(),
+
         lastName: lastName.trim(),
+
         birthCertificateNumber: birthCertificateNumber.trim(),
+
         dateOfBirth: formattedDate,
+
         gender: gender,
+
         bloodGroup: bloodGroup || null,
+
         profileImage: profileImage || null,
       };
 
       console.log("Sending Child Data:", childData);
+
+      // =====================================================
+      // Create Child
+      // =====================================================
 
       const response = await fetch(`${API_URL}/children`, {
         method: "POST",
 
         headers: {
           "Content-Type": "application/json",
+
           Authorization: `Bearer ${token}`,
         },
 
@@ -424,7 +461,12 @@ const AddChildScreen = () => {
       const responseText = await response.text();
 
       console.log("Child API Status:", response.status);
+
       console.log("Child API Response:", responseText);
+
+      // =====================================================
+      // API Error
+      // =====================================================
 
       if (!response.ok) {
         let errorMessage = "Failed to save child.";
@@ -444,13 +486,24 @@ const AddChildScreen = () => {
         }
 
         Alert.alert("Save Failed", errorMessage);
+
         return;
       }
+
+      // =====================================================
+      // Success
+      // =====================================================
 
       Alert.alert("Success", "Child information has been saved successfully.", [
         {
           text: "OK",
-          onPress: handleBack,
+
+          onPress: () => {
+            // Return to dashboard
+            // Dashboard useFocusEffect
+            // will reload the children.
+            router.replace("/ParentDashboardScreen");
+          },
         },
       ]);
     } catch (error) {
@@ -498,7 +551,12 @@ const AddChildScreen = () => {
           <View style={styles.profileSection}>
             <View style={styles.avatarContainer}>
               {profileImage ? (
-                <Image source={{ uri: profileImage }} style={styles.avatar} />
+                <Image
+                  source={{
+                    uri: profileImage,
+                  }}
+                  style={styles.avatar}
+                />
               ) : (
                 <View style={styles.defaultAvatar}>
                   <Ionicons
@@ -588,6 +646,7 @@ const AddChildScreen = () => {
               <View
                 style={[
                   styles.webDateInputWrapper,
+
                   errors.dateOfBirth && styles.inputError,
                 ]}
               >
@@ -621,6 +680,7 @@ const AddChildScreen = () => {
                 <TouchableOpacity
                   style={[
                     styles.dateInput,
+
                     errors.dateOfBirth && styles.inputError,
                   ]}
                   onPress={() => setShowDatePicker(true)}
@@ -629,6 +689,7 @@ const AddChildScreen = () => {
                   <Text
                     style={[
                       styles.dateText,
+
                       !isValidDate(dateOfBirth) && styles.placeholderText,
                     ]}
                   >
@@ -707,6 +768,10 @@ const AddChildScreen = () => {
   );
 };
 
+// =========================================================
+// Styles
+// =========================================================
+
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
@@ -720,78 +785,108 @@ const styles = StyleSheet.create({
 
   header: {
     height: 58,
+
     flexDirection: "row",
+
     alignItems: "center",
+
     paddingHorizontal: 20,
+
     backgroundColor: COLORS.background,
   },
 
   backButton: {
     width: 40,
     height: 40,
+
     justifyContent: "center",
+
     alignItems: "flex-start",
   },
 
   headerTitle: {
     fontSize: 18,
+
     fontWeight: "700",
+
     color: COLORS.textPrimary,
+
     marginLeft: 4,
   },
 
   content: {
     paddingHorizontal: 20,
+
     paddingTop: 12,
+
     paddingBottom: 32,
   },
 
   profileSection: {
     alignItems: "center",
+
     marginBottom: 28,
   },
 
   avatarContainer: {
     width: 112,
     height: 112,
+
     position: "relative",
   },
 
   avatar: {
     width: 112,
     height: 112,
+
     borderRadius: 56,
   },
 
   defaultAvatar: {
     width: 112,
     height: 112,
+
     borderRadius: 56,
+
     backgroundColor: COLORS.avatarBg[0],
+
     alignItems: "center",
+
     justifyContent: "center",
   },
 
   cameraButton: {
     position: "absolute",
+
     right: -4,
     bottom: 0,
+
     width: 36,
     height: 36,
+
     borderRadius: 18,
+
     backgroundColor: COLORS.white,
+
     alignItems: "center",
+
     justifyContent: "center",
+
     borderWidth: 1,
+
     borderColor: COLORS.border,
 
     shadowColor: "#000",
+
     shadowOffset: {
       width: 0,
       height: 2,
     },
+
     shadowOpacity: 0.15,
+
     shadowRadius: 4,
+
     elevation: 3,
   },
 
@@ -801,39 +896,61 @@ const styles = StyleSheet.create({
 
   label: {
     fontSize: 13,
+
     fontWeight: "600",
+
     color: COLORS.textPrimary,
+
     marginBottom: 8,
   },
 
   dateInput: {
     height: 50,
+
     flexDirection: "row",
+
     alignItems: "center",
+
     justifyContent: "space-between",
+
     backgroundColor: COLORS.card,
+
     borderWidth: 1,
+
     borderColor: COLORS.border,
+
     borderRadius: 10,
+
     paddingHorizontal: 16,
   },
 
   dateText: {
     flex: 1,
+
     fontSize: 14,
+
     color: COLORS.textPrimary,
   },
 
   webDateInputWrapper: {
     height: 50,
+
     flexDirection: "row",
+
     alignItems: "center",
+
     backgroundColor: COLORS.card,
+
     borderWidth: 1,
+
     borderColor: COLORS.border,
+
     borderRadius: 10,
+
     paddingLeft: 16,
+
     paddingRight: 12,
+
     overflow: "hidden",
   },
 
@@ -851,17 +968,25 @@ const styles = StyleSheet.create({
 
   errorText: {
     marginTop: 4,
+
     fontSize: 12,
+
     color: COLORS.error,
   },
 
   saveButton: {
     height: 50,
+
     backgroundColor: COLORS.primary,
+
     borderRadius: 10,
+
     alignItems: "center",
+
     justifyContent: "center",
+
     marginTop: 4,
+
     marginBottom: 20,
   },
 
@@ -871,7 +996,9 @@ const styles = StyleSheet.create({
 
   saveButtonText: {
     fontSize: 15,
+
     fontWeight: "700",
+
     color: COLORS.white,
   },
 });

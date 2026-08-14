@@ -1,32 +1,31 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import { useCallback, useEffect, useState } from "react";
 
 import {
-  View,
-  Text,
+  ActivityIndicator,
+  Alert,
+  RefreshControl,
+  SafeAreaView,
   ScrollView,
   StyleSheet,
-  SafeAreaView,
+  Text,
   TouchableOpacity,
-  ActivityIndicator,
-  RefreshControl,
-  Alert,
-} from 'react-native';
+  View,
+} from "react-native";
 
-import { router } from 'expo-router';
+import { router } from "expo-router";
 
-import DashboardHeader from '../component/DashboardHeader';
-import ApplicationSummaryCard from '../component/ApplicationSummaryCard';
-import ChildCard from '../component/ChildCard';
-import ApplicationCard from '../component/ApplicationCard';
-import BottomNavigation from '../component/BottomNavigation';
+import ApplicationCard from "../component/ApplicationCard";
+import ApplicationSummaryCard from "../component/ApplicationSummaryCard";
+import BottomNavigation from "../component/BottomNavigation";
+import ChildCard from "../component/ChildCard";
+import DashboardHeader from "../component/DashboardHeader";
 
-import { COLORS } from '../theme/colors';
+import { COLORS } from "../theme/colors";
 
-import { getAuthData } from '../src/storage/authStorage';
-import { logoutUser } from '../src/services/authService';
+import { logoutUser } from "../src/services/authService";
+import { getAuthData } from "../src/storage/authStorage";
 
-import { fetchParentDashboard } from '../src/services/parentService';
-
+import { fetchParentDashboard } from "../src/services/parentService";
 
 /*
 |--------------------------------------------------------------------------
@@ -34,33 +33,19 @@ import { fetchParentDashboard } from '../src/services/parentService';
 |--------------------------------------------------------------------------
 */
 
-const SectionHeader = ({
-  title,
-  actionLabel,
-  onAction,
-}) => {
+const SectionHeader = ({ title, actionLabel, onAction }) => {
   return (
     <View style={styles.sectionHeader}>
-
-      <Text style={styles.sectionTitle}>
-        {title}
-      </Text>
+      <Text style={styles.sectionTitle}>{title}</Text>
 
       {actionLabel && (
-        <TouchableOpacity
-          onPress={onAction}
-          activeOpacity={0.7}
-        >
-          <Text style={styles.sectionAction}>
-            {actionLabel}
-          </Text>
+        <TouchableOpacity onPress={onAction} activeOpacity={0.7}>
+          <Text style={styles.sectionAction}>{actionLabel}</Text>
         </TouchableOpacity>
       )}
-
     </View>
   );
 };
-
 
 /*
 |--------------------------------------------------------------------------
@@ -69,7 +54,6 @@ const SectionHeader = ({
 */
 
 export default function ParentDashboardScreen() {
-
   const [userData, setUserData] = useState(null);
 
   const [dashboardData, setDashboardData] = useState(null);
@@ -80,8 +64,7 @@ export default function ParentDashboardScreen() {
 
   const [error, setError] = useState(null);
 
-  const [activeTab, setActiveTab] = useState('Home');
-
+  const [activeTab, setActiveTab] = useState("Home");
 
   /*
   |--------------------------------------------------------------------------
@@ -90,9 +73,7 @@ export default function ParentDashboardScreen() {
   */
 
   const loadUser = useCallback(async () => {
-
     try {
-
       const stored = await getAuthData();
 
       if (stored) {
@@ -100,19 +81,12 @@ export default function ParentDashboardScreen() {
       }
 
       return stored;
-
     } catch (error) {
-
-      console.error(
-        'Failed to load user data:',
-        error
-      );
+      console.error("Failed to load user data:", error);
 
       return null;
     }
-
   }, []);
-
 
   /*
   |--------------------------------------------------------------------------
@@ -122,7 +96,6 @@ export default function ParentDashboardScreen() {
 
   const fetchData = useCallback(
     async (isRefresh = false) => {
-
       if (isRefresh) {
         setRefreshing(true);
       } else {
@@ -132,7 +105,6 @@ export default function ParentDashboardScreen() {
       setError(null);
 
       try {
-
         /*
         |--------------------------------------------------------------------------
         | Get logged-in user
@@ -141,7 +113,6 @@ export default function ParentDashboardScreen() {
 
         const storedUser = await loadUser();
 
-
         /*
         |--------------------------------------------------------------------------
         | Get dashboard data from Spring Boot
@@ -149,7 +120,6 @@ export default function ParentDashboardScreen() {
         */
 
         const data = await fetchParentDashboard();
-
 
         /*
         |--------------------------------------------------------------------------
@@ -164,44 +134,43 @@ export default function ParentDashboardScreen() {
             data?.parentName ||
             storedUser?.username ||
             storedUser?.firstName ||
-            'Parent',
+            "Parent",
         });
-
       } catch (err) {
+        console.error("Dashboard fetch error:", err);
 
-        console.error(
-          'Dashboard fetch error:',
-          err
-        );
-
-        setError(
-          'Unable to load dashboard. Please try again.'
-        );
-
+        setError("Unable to load dashboard. Please try again.");
       } finally {
-
         setLoading(false);
 
         setRefreshing(false);
       }
-
     },
-    [loadUser]
+    [loadUser],
   );
-
 
   /*
   |--------------------------------------------------------------------------
-  | Initial Dashboard Load
+  | Refresh Dashboard Whenever Screen Gets Focus
   |--------------------------------------------------------------------------
+  |
+  | This is important after returning from AddChildScreen.
+  |
   */
 
   useEffect(() => {
-
     fetchData();
-
   }, [fetchData]);
 
+  /*
+  |--------------------------------------------------------------------------
+  | Open Add Child Screen
+  |--------------------------------------------------------------------------
+  */
+
+  const handleAddChild = () => {
+    router.push("/AddChildScreen");
+  };
 
   /*
   |--------------------------------------------------------------------------
@@ -210,22 +179,14 @@ export default function ParentDashboardScreen() {
   */
 
   const handleLogout = async () => {
-
     try {
-
       await logoutUser();
 
-      router.replace('/LoginScreen');
-
+      router.replace("/LoginScreen");
     } catch (error) {
-
-      console.error(
-        'Logout failed:',
-        error
-      );
+      console.error("Logout failed:", error);
     }
   };
-
 
   /*
   |--------------------------------------------------------------------------
@@ -234,25 +195,14 @@ export default function ParentDashboardScreen() {
   */
 
   if (loading) {
-
     return (
-      <SafeAreaView
-        style={styles.centeredContainer}
-      >
+      <SafeAreaView style={styles.centeredContainer}>
+        <ActivityIndicator size="large" color={COLORS.primary} />
 
-        <ActivityIndicator
-          size="large"
-          color={COLORS.primary}
-        />
-
-        <Text style={styles.loadingText}>
-          Loading your dashboard...
-        </Text>
-
+        <Text style={styles.loadingText}>Loading your dashboard...</Text>
       </SafeAreaView>
     );
   }
-
 
   /*
   |--------------------------------------------------------------------------
@@ -261,36 +211,22 @@ export default function ParentDashboardScreen() {
   */
 
   if (error) {
-
     return (
-      <SafeAreaView
-        style={styles.centeredContainer}
-      >
+      <SafeAreaView style={styles.centeredContainer}>
+        <Text style={styles.errorIcon}>⚠️</Text>
 
-        <Text style={styles.errorIcon}>
-          ⚠️
-        </Text>
-
-        <Text style={styles.errorText}>
-          {error}
-        </Text>
+        <Text style={styles.errorText}>{error}</Text>
 
         <TouchableOpacity
           style={styles.retryButton}
           onPress={() => fetchData()}
           activeOpacity={0.8}
         >
-
-          <Text style={styles.retryButtonText}>
-            Retry
-          </Text>
-
+          <Text style={styles.retryButtonText}>Retry</Text>
         </TouchableOpacity>
-
       </SafeAreaView>
     );
   }
-
 
   /*
   |--------------------------------------------------------------------------
@@ -305,7 +241,6 @@ export default function ParentDashboardScreen() {
     recentApplications = [],
   } = dashboardData || {};
 
-
   /*
   |--------------------------------------------------------------------------
   | Main UI
@@ -314,9 +249,7 @@ export default function ParentDashboardScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-
       <View style={styles.screen}>
-
         {/* ================================================================ */}
         {/* Scrollable Dashboard */}
         {/* ================================================================ */}
@@ -325,7 +258,6 @@ export default function ParentDashboardScreen() {
           style={styles.scroll}
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
-
           refreshControl={
             <RefreshControl
               refreshing={refreshing}
@@ -335,22 +267,16 @@ export default function ParentDashboardScreen() {
             />
           }
         >
-
           {/* ============================================================ */}
           {/* Dashboard Header */}
           {/* ============================================================ */}
 
           <DashboardHeader
             parentName={parentName}
-
             onBellPress={() =>
-              Alert.alert(
-                'Notifications',
-                'No new notifications.'
-              )
+              Alert.alert("Notifications", "No new notifications.")
             }
           />
-
 
           {/* ============================================================ */}
           {/* Total Applications */}
@@ -358,19 +284,14 @@ export default function ParentDashboardScreen() {
 
           <ApplicationSummaryCard
             totalApplications={totalApplications}
-
-            onViewAll={() =>
-              setActiveTab('Applications')
-            }
+            onViewAll={() => setActiveTab("Applications")}
           />
-
 
           {/* ============================================================ */}
           {/* Dashboard Body */}
           {/* ============================================================ */}
 
           <View style={styles.body}>
-
             {/* ========================================================== */}
             {/* Children */}
             {/* ========================================================== */}
@@ -378,43 +299,26 @@ export default function ParentDashboardScreen() {
             <SectionHeader
               title="Children"
               actionLabel="+ Add Child"
-
-              onAction={() =>
-                Alert.alert(
-                  'Add Child',
-                  'This feature is coming soon.'
-                )
-              }
+              onAction={handleAddChild}
             />
 
-
             {children.length === 0 ? (
-
-              <Text style={styles.emptyText}>
-                No children added yet.
-              </Text>
-
+              <Text style={styles.emptyText}>No children added yet.</Text>
             ) : (
-
               children.map((child, index) => (
-
                 <ChildCard
                   key={child.id || index}
                   child={child}
                   index={index}
-
                   onPress={() =>
                     Alert.alert(
-                      'Child Details',
-                      `${child.firstName} ${child.lastName}`
+                      "Child Details",
+                      `${child.firstName} ${child.lastName}`,
                     )
                   }
                 />
-
               ))
-
             )}
-
 
             {/* ========================================================== */}
             {/* Recent Applications */}
@@ -423,58 +327,39 @@ export default function ParentDashboardScreen() {
             <SectionHeader
               title="Recent Applications"
               actionLabel="See All"
-
-              onAction={() =>
-                setActiveTab('Applications')
-              }
+              onAction={() => setActiveTab("Applications")}
             />
 
-
             {recentApplications.length === 0 ? (
-
               <Text style={styles.emptyText}>
                 No applications submitted yet.
               </Text>
-
             ) : (
-
               recentApplications.map((application) => (
-
                 <ApplicationCard
                   key={application.applicationId}
                   application={application}
-
                   onPress={() =>
                     Alert.alert(
-                      'Application',
-                      `School: ${application.schoolName}\nStatus: ${application.status}`
+                      "Application",
+                      `School: ${application.schoolName}\nStatus: ${application.status}`,
                     )
                   }
                 />
-
               ))
-
             )}
-
           </View>
-
         </ScrollView>
-
 
         {/* ================================================================ */}
         {/* Bottom Navigation */}
         {/* ================================================================ */}
 
-        <BottomNavigation
-          activeTab="Home"
-        />
-
+        <BottomNavigation activeTab="Home" />
       </View>
-
     </SafeAreaView>
   );
 }
-
 
 /*
 |--------------------------------------------------------------------------
@@ -483,7 +368,6 @@ export default function ParentDashboardScreen() {
 */
 
 const styles = StyleSheet.create({
-
   safeArea: {
     flex: 1,
     backgroundColor: COLORS.primary,
@@ -507,7 +391,6 @@ const styles = StyleSheet.create({
     paddingTop: 24,
   },
 
-
   /*
   |--------------------------------------------------------------------------
   | Section Header
@@ -515,9 +398,9 @@ const styles = StyleSheet.create({
   */
 
   sectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
 
     marginBottom: 12,
     marginTop: 8,
@@ -525,16 +408,15 @@ const styles = StyleSheet.create({
 
   sectionTitle: {
     fontSize: 17,
-    fontWeight: '700',
+    fontWeight: "700",
     color: COLORS.textPrimary,
   },
 
   sectionAction: {
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: "600",
     color: COLORS.primary,
   },
-
 
   /*
   |--------------------------------------------------------------------------
@@ -546,12 +428,11 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: COLORS.textMuted,
 
-    fontStyle: 'italic',
+    fontStyle: "italic",
 
     marginBottom: 20,
     marginLeft: 4,
   },
-
 
   /*
   |--------------------------------------------------------------------------
@@ -562,8 +443,8 @@ const styles = StyleSheet.create({
   centeredContainer: {
     flex: 1,
 
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
 
     backgroundColor: COLORS.background,
 
@@ -577,7 +458,6 @@ const styles = StyleSheet.create({
 
     color: COLORS.textSecondary,
   },
-
 
   /*
   |--------------------------------------------------------------------------
@@ -596,7 +476,7 @@ const styles = StyleSheet.create({
 
     color: COLORS.textSecondary,
 
-    textAlign: 'center',
+    textAlign: "center",
 
     marginBottom: 24,
   },
@@ -613,9 +493,8 @@ const styles = StyleSheet.create({
   retryButtonText: {
     color: COLORS.white,
 
-    fontWeight: '700',
+    fontWeight: "700",
 
     fontSize: 15,
   },
-
 });
