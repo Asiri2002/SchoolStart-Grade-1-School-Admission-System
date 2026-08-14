@@ -19,14 +19,55 @@ import {
 import FormDropdown from "../component/FormDropdown";
 import FormInput from "../component/FormInput";
 
-// IMPORTANT:
-// AddChildScreen.js is inside app/
-// src/ is one level above app/
 import { getAccessToken } from "../src/storage/authStorage";
 
 import { COLORS } from "../theme";
 
 const API_URL = "http://localhost:8080/api";
+
+/*
+|--------------------------------------------------------------------------
+| Convert Image URI to Base64
+|--------------------------------------------------------------------------
+|
+| ImagePicker gives us a local URI.
+| We convert that URI to a Base64 data URL before sending it
+| to the Spring Boot backend.
+|
+*/
+
+const imageUriToBase64 = async (uri) => {
+  try {
+    const response = await fetch(uri);
+
+    if (!response.ok) {
+      throw new Error("Unable to read selected image.");
+    }
+
+    const blob = await response.blob();
+
+    return await new Promise((resolve, reject) => {
+      const reader = new FileReader();
+
+      reader.onloadend = () => {
+        if (typeof reader.result === "string") {
+          resolve(reader.result);
+        } else {
+          reject(new Error("Unable to convert image to Base64."));
+        }
+      };
+
+      reader.onerror = () => {
+        reject(new Error("Failed to read image file."));
+      };
+
+      reader.readAsDataURL(blob);
+    });
+  } catch (error) {
+    console.error("Image Base64 conversion error:", error);
+    throw error;
+  }
+};
 
 const AddChildScreen = () => {
   // =========================================================
@@ -40,6 +81,8 @@ const AddChildScreen = () => {
   const [dateOfBirth, setDateOfBirth] = useState(null);
   const [gender, setGender] = useState(null);
   const [bloodGroup, setBloodGroup] = useState(null);
+
+  // This stores the local image URI from ImagePicker.
   const [profileImage, setProfileImage] = useState(null);
 
   const [showDatePicker, setShowDatePicker] = useState(false);
@@ -67,6 +110,12 @@ const AddChildScreen = () => {
 
   const handlePickImage = async () => {
     try {
+      /*
+      |----------------------------------------------------------------------
+      | Request permission on Android/iOS
+      |----------------------------------------------------------------------
+      */
+
       if (Platform.OS !== "web") {
         const permission =
           await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -81,15 +130,31 @@ const AddChildScreen = () => {
         }
       }
 
+      /*
+      |----------------------------------------------------------------------
+      | Open image picker
+      |----------------------------------------------------------------------
+      */
+
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ["images"],
         allowsEditing: true,
         aspect: [1, 1],
-        quality: 0.8,
+        quality: 0.7,
       });
 
-      if (!result.canceled && result.assets?.length > 0) {
-        setProfileImage(result.assets[0].uri);
+      /*
+      |----------------------------------------------------------------------
+      | Save selected image URI
+      |----------------------------------------------------------------------
+      */
+
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        const selectedImage = result.assets[0];
+
+        console.log("Selected image:", selectedImage.uri);
+
+        setProfileImage(selectedImage.uri);
       }
     } catch (error) {
       console.error("Image picker error:", error);
@@ -219,7 +284,12 @@ const AddChildScreen = () => {
       return;
     }
 
-    // Prevent JavaScript from correcting invalid dates
+    /*
+    |----------------------------------------------------------------------
+    | Prevent JavaScript from correcting invalid dates
+    |----------------------------------------------------------------------
+    */
+
     if (
       selectedDate.getFullYear() !== year ||
       selectedDate.getMonth() !== month - 1 ||
@@ -235,7 +305,12 @@ const AddChildScreen = () => {
       return;
     }
 
-    // Prevent future dates
+    /*
+    |----------------------------------------------------------------------
+    | Prevent future dates
+    |----------------------------------------------------------------------
+    */
+
     const today = new Date();
 
     today.setHours(0, 0, 0, 0);
@@ -291,7 +366,13 @@ const AddChildScreen = () => {
     return `${year}-${month}-${day}`;
   };
 
-  // Backend LocalDate format: YYYY-MM-DD
+  /*
+  |----------------------------------------------------------------------
+  | Backend LocalDate format
+  | YYYY-MM-DD
+  |----------------------------------------------------------------------
+  */
+
   const formatDateForApi = (date) => {
     if (!isValidDate(date)) {
       return null;
@@ -421,6 +502,34 @@ const AddChildScreen = () => {
       }
 
       // =====================================================
+      // Convert Profile Image
+      // =====================================================
+
+      let profileImageBase64 = null;
+
+      if (profileImage) {
+        try {
+          console.log("Converting profile image...");
+
+          profileImageBase64 = await imageUriToBase64(profileImage);
+
+          console.log(
+            "Profile image converted successfully:",
+            !!profileImageBase64,
+          );
+        } catch (imageError) {
+          console.error("Image conversion error:", imageError);
+
+          Alert.alert(
+            "Image Error",
+            "Unable to process the selected profile image.",
+          );
+
+          return;
+        }
+      }
+
+      // =====================================================
       // Child Data
       // =====================================================
 
@@ -435,12 +544,23 @@ const AddChildScreen = () => {
 
         gender: gender,
 
-        bloodGroup: bloodGroup || null,
-
-        profileImage: profileImage || null,
+        profileImage: profileImageBase64,
       };
 
-      console.log("Sending Child Data:", childData);
+      /*
+      |----------------------------------------------------------------
+      | Don't print the complete Base64 string to console.
+      |----------------------------------------------------------------
+      */
+
+      console.log("Sending Child Data:", {
+        firstName: childData.firstName,
+        lastName: childData.lastName,
+        birthCertificateNumber: childData.birthCertificateNumber,
+        dateOfBirth: childData.dateOfBirth,
+        gender: childData.gender,
+        profileImage: profileImageBase64 ? "[BASE64 IMAGE]" : null,
+      });
 
       // =====================================================
       // Create Child
@@ -499,9 +619,6 @@ const AddChildScreen = () => {
           text: "OK",
 
           onPress: () => {
-            // Return to dashboard
-            // Dashboard useFocusEffect
-            // will reload the children.
             router.replace("/ParentDashboardScreen");
           },
         },
@@ -525,7 +642,9 @@ const AddChildScreen = () => {
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
-        {/* Header */}
+        {/* =====================================================
+            Header
+        ===================================================== */}
 
         <View style={styles.header}>
           <TouchableOpacity
@@ -541,12 +660,18 @@ const AddChildScreen = () => {
           <Text style={styles.headerTitle}>Add Child</Text>
         </View>
 
+        {/* =====================================================
+            Content
+        ===================================================== */}
+
         <ScrollView
           contentContainerStyle={styles.content}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
-          {/* Profile Image */}
+          {/* ===================================================
+              Profile Image
+          =================================================== */}
 
           <View style={styles.profileSection}>
             <View style={styles.avatarContainer}>
@@ -577,7 +702,9 @@ const AddChildScreen = () => {
             </View>
           </View>
 
-          {/* First Name */}
+          {/* ===================================================
+              First Name
+          =================================================== */}
 
           <FormInput
             label="First Name"
@@ -597,7 +724,9 @@ const AddChildScreen = () => {
             autoCapitalize="words"
           />
 
-          {/* Last Name */}
+          {/* ===================================================
+              Last Name
+          =================================================== */}
 
           <FormInput
             label="Last Name"
@@ -617,7 +746,9 @@ const AddChildScreen = () => {
             autoCapitalize="words"
           />
 
-          {/* Birth Certificate Number */}
+          {/* ===================================================
+              Birth Certificate Number
+          =================================================== */}
 
           <FormInput
             label="Birth Certificate Number"
@@ -637,7 +768,9 @@ const AddChildScreen = () => {
             autoCapitalize="none"
           />
 
-          {/* Date of Birth */}
+          {/* ===================================================
+              Date of Birth
+          =================================================== */}
 
           <View style={styles.fieldContainer}>
             <Text style={styles.label}>Date of Birth</Text>
@@ -646,7 +779,6 @@ const AddChildScreen = () => {
               <View
                 style={[
                   styles.webDateInputWrapper,
-
                   errors.dateOfBirth && styles.inputError,
                 ]}
               >
@@ -680,7 +812,6 @@ const AddChildScreen = () => {
                 <TouchableOpacity
                   style={[
                     styles.dateInput,
-
                     errors.dateOfBirth && styles.inputError,
                   ]}
                   onPress={() => setShowDatePicker(true)}
@@ -689,7 +820,6 @@ const AddChildScreen = () => {
                   <Text
                     style={[
                       styles.dateText,
-
                       !isValidDate(dateOfBirth) && styles.placeholderText,
                     ]}
                   >
@@ -722,7 +852,9 @@ const AddChildScreen = () => {
             ) : null}
           </View>
 
-          {/* Gender */}
+          {/* ===================================================
+              Gender
+          =================================================== */}
 
           <FormDropdown
             label="Gender"
@@ -740,7 +872,9 @@ const AddChildScreen = () => {
             error={errors.gender}
           />
 
-          {/* Blood Group */}
+          {/* ===================================================
+              Blood Group
+          =================================================== */}
 
           <FormDropdown
             label="Blood Group (Optional)"
@@ -750,7 +884,9 @@ const AddChildScreen = () => {
             onSelect={setBloodGroup}
           />
 
-          {/* Save */}
+          {/* ===================================================
+              Save Button
+          =================================================== */}
 
           <TouchableOpacity
             style={[styles.saveButton, isSaving && styles.saveButtonDisabled]}
@@ -785,79 +921,60 @@ const styles = StyleSheet.create({
 
   header: {
     height: 58,
-
     flexDirection: "row",
-
     alignItems: "center",
-
     paddingHorizontal: 20,
-
     backgroundColor: COLORS.background,
   },
 
   backButton: {
     width: 40,
     height: 40,
-
     justifyContent: "center",
-
     alignItems: "flex-start",
   },
 
   headerTitle: {
     fontSize: 18,
-
     fontWeight: "700",
-
     color: COLORS.textPrimary,
-
     marginLeft: 4,
   },
 
   content: {
     paddingHorizontal: 20,
-
     paddingTop: 12,
-
     paddingBottom: 32,
   },
 
   profileSection: {
     alignItems: "center",
-
     marginBottom: 28,
   },
 
   avatarContainer: {
     width: 112,
     height: 112,
-
     position: "relative",
   },
 
   avatar: {
     width: 112,
     height: 112,
-
     borderRadius: 56,
   },
 
   defaultAvatar: {
     width: 112,
     height: 112,
-
     borderRadius: 56,
-
     backgroundColor: COLORS.avatarBg[0],
-
     alignItems: "center",
-
     justifyContent: "center",
   },
 
   cameraButton: {
     position: "absolute",
-
     right: -4,
     bottom: 0,
 
@@ -869,11 +986,9 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.white,
 
     alignItems: "center",
-
     justifyContent: "center",
 
     borderWidth: 1,
-
     borderColor: COLORS.border,
 
     shadowColor: "#000",
@@ -884,7 +999,6 @@ const styles = StyleSheet.create({
     },
 
     shadowOpacity: 0.15,
-
     shadowRadius: 4,
 
     elevation: 3,
@@ -896,11 +1010,8 @@ const styles = StyleSheet.create({
 
   label: {
     fontSize: 13,
-
     fontWeight: "600",
-
     color: COLORS.textPrimary,
-
     marginBottom: 8,
   },
 
