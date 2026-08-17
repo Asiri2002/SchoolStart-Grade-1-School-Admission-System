@@ -5,15 +5,15 @@ import { router } from "expo-router";
 import { useState } from "react";
 
 import {
-    Alert,
-    Image,
-    Platform,
-    SafeAreaView,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  Alert,
+  Image,
+  Platform,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 
 import FormDropdown from "../component/FormDropdown";
@@ -25,16 +25,9 @@ import { COLORS } from "../theme";
 
 const API_URL = "http://localhost:8080/api";
 
-/*
-|--------------------------------------------------------------------------
-| Convert Image URI to Base64
-|--------------------------------------------------------------------------
-|
-| ImagePicker gives us a local URI.
-| We convert that URI to a Base64 data URL before sending it
-| to the Spring Boot backend.
-|
-*/
+// =========================================================
+// Convert Image URI to Base64
+// =========================================================
 
 const imageUriToBase64 = async (uri) => {
   try {
@@ -69,6 +62,10 @@ const imageUriToBase64 = async (uri) => {
   }
 };
 
+// =========================================================
+// Add Child Screen
+// =========================================================
+
 const AddChildScreen = () => {
   // =========================================================
   // Form State
@@ -82,11 +79,14 @@ const AddChildScreen = () => {
   const [gender, setGender] = useState(null);
   const [bloodGroup, setBloodGroup] = useState(null);
 
-  // This stores the local image URI from ImagePicker.
   const [profileImage, setProfileImage] = useState(null);
 
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+
+  // =========================================================
+  // Errors
+  // =========================================================
 
   const [errors, setErrors] = useState({
     firstName: "",
@@ -110,12 +110,6 @@ const AddChildScreen = () => {
 
   const handlePickImage = async () => {
     try {
-      /*
-      |----------------------------------------------------------------------
-      | Request permission on Android/iOS
-      |----------------------------------------------------------------------
-      */
-
       if (Platform.OS !== "web") {
         const permission =
           await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -130,24 +124,12 @@ const AddChildScreen = () => {
         }
       }
 
-      /*
-      |----------------------------------------------------------------------
-      | Open image picker
-      |----------------------------------------------------------------------
-      */
-
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ["images"],
         allowsEditing: true,
         aspect: [1, 1],
         quality: 0.7,
       });
-
-      /*
-      |----------------------------------------------------------------------
-      | Save selected image URI
-      |----------------------------------------------------------------------
-      */
 
       if (!result.canceled && result.assets && result.assets.length > 0) {
         const selectedImage = result.assets[0];
@@ -284,11 +266,7 @@ const AddChildScreen = () => {
       return;
     }
 
-    /*
-    |----------------------------------------------------------------------
-    | Prevent JavaScript from correcting invalid dates
-    |----------------------------------------------------------------------
-    */
+    // Prevent JavaScript from correcting invalid dates
 
     if (
       selectedDate.getFullYear() !== year ||
@@ -305,11 +283,7 @@ const AddChildScreen = () => {
       return;
     }
 
-    /*
-    |----------------------------------------------------------------------
-    | Prevent future dates
-    |----------------------------------------------------------------------
-    */
+    // Prevent future dates
 
     const today = new Date();
 
@@ -366,12 +340,10 @@ const AddChildScreen = () => {
     return `${year}-${month}-${day}`;
   };
 
-  /*
-  |----------------------------------------------------------------------
-  | Backend LocalDate format
-  | YYYY-MM-DD
-  |----------------------------------------------------------------------
-  */
+  // =========================================================
+  // Backend LocalDate Format
+  // YYYY-MM-DD
+  // =========================================================
 
   const formatDateForApi = (date) => {
     if (!isValidDate(date)) {
@@ -402,29 +374,37 @@ const AddChildScreen = () => {
 
     let valid = true;
 
-    // First name
+    // First Name
+
     if (!firstName.trim()) {
       newErrors.firstName = "First name is required.";
 
       valid = false;
     }
 
-    // Last name
+    // Last Name
+
     if (!lastName.trim()) {
       newErrors.lastName = "Last name is required.";
 
       valid = false;
     }
 
-    // Birth certificate number
-    if (!birthCertificateNumber.trim()) {
+    // Birth Certificate Number
+
+    const normalizedBirthCertificateNumber = birthCertificateNumber
+      .trim()
+      .toUpperCase();
+
+    if (!normalizedBirthCertificateNumber) {
       newErrors.birthCertificateNumber =
         "Birth certificate number is required.";
 
       valid = false;
     }
 
-    // Date of birth
+    // Date of Birth
+
     if (!isValidDate(dateOfBirth)) {
       newErrors.dateOfBirth = "Date of birth is required.";
 
@@ -446,6 +426,7 @@ const AddChildScreen = () => {
     }
 
     // Gender
+
     if (!gender) {
       newErrors.gender = "Please select gender.";
 
@@ -466,9 +447,13 @@ const AddChildScreen = () => {
       return;
     }
 
+    // Validate form
+
     if (!validateForm()) {
       return;
     }
+
+    // Format date
 
     const formattedDate = formatDateForApi(dateOfBirth);
 
@@ -481,11 +466,17 @@ const AddChildScreen = () => {
       return;
     }
 
+    // Normalize birth certificate number
+
+    const normalizedBirthCertificateNumber = birthCertificateNumber
+      .trim()
+      .toUpperCase();
+
     try {
       setIsSaving(true);
 
       // =====================================================
-      // Get JWT token
+      // Get JWT Token
       // =====================================================
 
       const token = await getAccessToken();
@@ -513,10 +504,7 @@ const AddChildScreen = () => {
 
           profileImageBase64 = await imageUriToBase64(profileImage);
 
-          console.log(
-            "Profile image converted successfully:",
-            !!profileImageBase64,
-          );
+          console.log("Profile image converted:", !!profileImageBase64);
         } catch (imageError) {
           console.error("Image conversion error:", imageError);
 
@@ -538,7 +526,7 @@ const AddChildScreen = () => {
 
         lastName: lastName.trim(),
 
-        birthCertificateNumber: birthCertificateNumber.trim(),
+        birthCertificateNumber: normalizedBirthCertificateNumber,
 
         dateOfBirth: formattedDate,
 
@@ -547,18 +535,17 @@ const AddChildScreen = () => {
         profileImage: profileImageBase64,
       };
 
-      /*
-      |----------------------------------------------------------------
-      | Don't print the complete Base64 string to console.
-      |----------------------------------------------------------------
-      */
-
       console.log("Sending Child Data:", {
         firstName: childData.firstName,
+
         lastName: childData.lastName,
+
         birthCertificateNumber: childData.birthCertificateNumber,
+
         dateOfBirth: childData.dateOfBirth,
+
         gender: childData.gender,
+
         profileImage: profileImageBase64 ? "[BASE64 IMAGE]" : null,
       });
 
@@ -585,7 +572,7 @@ const AddChildScreen = () => {
       console.log("Child API Response:", responseText);
 
       // =====================================================
-      // API Error
+      // API ERROR
       // =====================================================
 
       if (!response.ok) {
@@ -605,13 +592,73 @@ const AddChildScreen = () => {
           }
         }
 
+        // ===================================================
+        // DUPLICATE BIRTH CERTIFICATE
+        // ===================================================
+
+        if (response.status === 409) {
+          setErrors((previous) => ({
+            ...previous,
+
+            birthCertificateNumber:
+              "This birth certificate number is already registered.",
+          }));
+
+          Alert.alert(
+            "Duplicate Birth Certificate",
+            "A child with this birth certificate number already exists. Please enter a different birth certificate number.",
+          );
+
+          return;
+        }
+
+        // ===================================================
+        // Bad Request
+        // ===================================================
+
+        if (response.status === 400) {
+          Alert.alert("Invalid Information", errorMessage);
+
+          return;
+        }
+
+        // ===================================================
+        // Unauthorized
+        // ===================================================
+
+        if (response.status === 401) {
+          Alert.alert(
+            "Session Expired",
+            "Your login session has expired. Please login again.",
+          );
+
+          return;
+        }
+
+        // ===================================================
+        // Forbidden
+        // ===================================================
+
+        if (response.status === 403) {
+          Alert.alert(
+            "Access Denied",
+            "You do not have permission to add a child.",
+          );
+
+          return;
+        }
+
+        // ===================================================
+        // Other Errors
+        // ===================================================
+
         Alert.alert("Save Failed", errorMessage);
 
         return;
       }
 
       // =====================================================
-      // Success
+      // SUCCESS
       // =====================================================
 
       Alert.alert("Success", "Child information has been saved successfully.", [
@@ -642,9 +689,9 @@ const AddChildScreen = () => {
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
-        {/* =====================================================
+        {/* =================================================
             Header
-        ===================================================== */}
+        ================================================= */}
 
         <View style={styles.header}>
           <TouchableOpacity
@@ -660,18 +707,18 @@ const AddChildScreen = () => {
           <Text style={styles.headerTitle}>Add Child</Text>
         </View>
 
-        {/* =====================================================
+        {/* =================================================
             Content
-        ===================================================== */}
+        ================================================= */}
 
         <ScrollView
           contentContainerStyle={styles.content}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
-          {/* ===================================================
+          {/* =================================================
               Profile Image
-          =================================================== */}
+          ================================================= */}
 
           <View style={styles.profileSection}>
             <View style={styles.avatarContainer}>
@@ -702,9 +749,9 @@ const AddChildScreen = () => {
             </View>
           </View>
 
-          {/* ===================================================
+          {/* =================================================
               First Name
-          =================================================== */}
+          ================================================= */}
 
           <FormInput
             label="First Name"
@@ -722,11 +769,12 @@ const AddChildScreen = () => {
             }}
             error={errors.firstName}
             autoCapitalize="words"
+            autoCorrect={false}
           />
 
-          {/* ===================================================
+          {/* =================================================
               Last Name
-          =================================================== */}
+          ================================================= */}
 
           <FormInput
             label="Last Name"
@@ -744,33 +792,39 @@ const AddChildScreen = () => {
             }}
             error={errors.lastName}
             autoCapitalize="words"
+            autoCorrect={false}
           />
 
-          {/* ===================================================
+          {/* =================================================
               Birth Certificate Number
-          =================================================== */}
+          ================================================= */}
 
           <FormInput
             label="Birth Certificate Number"
             placeholder="Enter birth certificate number"
             value={birthCertificateNumber}
             onChangeText={(text) => {
-              setBirthCertificateNumber(text);
+              // Remove spaces at beginning
+              const cleanedValue = text.trimStart();
+
+              setBirthCertificateNumber(cleanedValue);
 
               if (errors.birthCertificateNumber) {
                 setErrors((previous) => ({
                   ...previous,
+
                   birthCertificateNumber: "",
                 }));
               }
             }}
             error={errors.birthCertificateNumber}
-            autoCapitalize="none"
+            autoCapitalize="characters"
+            autoCorrect={false}
           />
 
-          {/* ===================================================
+          {/* =================================================
               Date of Birth
-          =================================================== */}
+          ================================================= */}
 
           <View style={styles.fieldContainer}>
             <Text style={styles.label}>Date of Birth</Text>
@@ -779,6 +833,7 @@ const AddChildScreen = () => {
               <View
                 style={[
                   styles.webDateInputWrapper,
+
                   errors.dateOfBirth && styles.inputError,
                 ]}
               >
@@ -812,6 +867,7 @@ const AddChildScreen = () => {
                 <TouchableOpacity
                   style={[
                     styles.dateInput,
+
                     errors.dateOfBirth && styles.inputError,
                   ]}
                   onPress={() => setShowDatePicker(true)}
@@ -820,6 +876,7 @@ const AddChildScreen = () => {
                   <Text
                     style={[
                       styles.dateText,
+
                       !isValidDate(dateOfBirth) && styles.placeholderText,
                     ]}
                   >
@@ -852,9 +909,9 @@ const AddChildScreen = () => {
             ) : null}
           </View>
 
-          {/* ===================================================
+          {/* =================================================
               Gender
-          =================================================== */}
+          ================================================= */}
 
           <FormDropdown
             label="Gender"
@@ -872,9 +929,9 @@ const AddChildScreen = () => {
             error={errors.gender}
           />
 
-          {/* ===================================================
+          {/* =================================================
               Blood Group
-          =================================================== */}
+          ================================================= */}
 
           <FormDropdown
             label="Blood Group (Optional)"
@@ -884,9 +941,9 @@ const AddChildScreen = () => {
             onSelect={setBloodGroup}
           />
 
-          {/* ===================================================
+          {/* =================================================
               Save Button
-          =================================================== */}
+          ================================================= */}
 
           <TouchableOpacity
             style={[styles.saveButton, isSaving && styles.saveButtonDisabled]}
