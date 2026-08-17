@@ -1,43 +1,84 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
-/**
- * SchoolCard
- *
- * Props:
- *  - school   : { id, name, location, distance, availableSeats, image }
- *  - isFavorite : boolean
- *  - onFavoritePress : () => void
- *  - onPress  : () => void   (future — navigate to school detail)
- */
 const SchoolCard = ({ school, isFavorite, onFavoritePress, onPress }) => {
+  const imageUrl =
+    school?.image ||
+    school?.imageUrl ||
+    school?.schoolImage ||
+    school?.logo ||
+    null;
+
+  const location =
+    school?.location ||
+    school?.district ||
+    school?.address ||
+    "Location unavailable";
+
+  const distance = school?.distance != null ? `${school.distance} km` : null;
+
+  const availableSeats =
+    school?.availableSeats != null ? school.availableSeats : "N/A";
+
   return (
     <TouchableOpacity style={styles.card} activeOpacity={0.7} onPress={onPress}>
-      {/* School thumbnail */}
-      <Image
-        source={{ uri: school.image }}
-        style={styles.image}
-        resizeMode="cover"
-      />
+      {/* School Image */}
 
-      {/* Info block */}
+      {imageUrl ? (
+        <Image
+          source={{ uri: imageUrl }}
+          style={styles.image}
+          resizeMode="cover"
+          onError={(error) => {
+            console.log("School image failed:", imageUrl, error.nativeEvent);
+          }}
+        />
+      ) : (
+        <View style={styles.imagePlaceholder}>
+          <Ionicons name="school-outline" size={32} color="#9E9E9E" />
+        </View>
+      )}
+
+      {/* School Information */}
+
       <View style={styles.info}>
         <Text style={styles.name} numberOfLines={1}>
-          {school.name}
+          {school?.name || "Unknown School"}
         </Text>
-        <Text style={styles.location}>{school.location}</Text>
-        <Text style={styles.distance}>{school.distance}</Text>
+
+        <View style={styles.locationRow}>
+          <Ionicons name="location-outline" size={13} color="#6B6B6B" />
+
+          <Text style={styles.location} numberOfLines={1}>
+            {location}
+          </Text>
+        </View>
+
+        {distance && <Text style={styles.distance}>{distance}</Text>}
+
         <Text style={styles.seats}>
           Available Seats:{" "}
-          <Text style={styles.seatsCount}>{school.availableSeats}</Text>
+          <Text style={styles.seatsCount}>{availableSeats}</Text>
         </Text>
       </View>
 
-      {/* Favorite icon */}
+      {/* Favorite */}
+
       <TouchableOpacity
         style={styles.heartBtn}
-        onPress={onFavoritePress}
-        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+        onPress={(event) => {
+          event.stopPropagation();
+
+          if (onFavoritePress) {
+            onFavoritePress();
+          }
+        }}
+        hitSlop={{
+          top: 10,
+          bottom: 10,
+          left: 10,
+          right: 10,
+        }}
       >
         <Ionicons
           name={isFavorite ? "heart" : "heart-outline"}
@@ -47,6 +88,7 @@ const SchoolCard = ({ school, isFavorite, onFavoritePress, onPress }) => {
       </TouchableOpacity>
 
       {/* Divider */}
+
       <View style={styles.divider} />
     </TouchableOpacity>
   );
@@ -68,6 +110,15 @@ const styles = StyleSheet.create({
     backgroundColor: "#E0E0E0",
   },
 
+  imagePlaceholder: {
+    width: 72,
+    height: 72,
+    borderRadius: 10,
+    backgroundColor: "#EEF2F7",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
   info: {
     flex: 1,
     marginLeft: 14,
@@ -78,13 +129,20 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: "700",
     color: "#1A1A1A",
-    marginBottom: 2,
+    marginBottom: 4,
+  },
+
+  locationRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 3,
   },
 
   location: {
+    flex: 1,
     fontSize: 13,
     color: "#6B6B6B",
-    marginBottom: 1,
+    marginLeft: 4,
   },
 
   distance: {

@@ -3,20 +3,25 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
 
 import {
-    ActivityIndicator,
-    FlatList,
-    SafeAreaView,
-    StatusBar,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  FlatList,
+  SafeAreaView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 
 import SchoolCard from "../component/SchoolCard";
 
-import { fetchSchools } from "../src/services/schoolService";
+import {
+  fetchSchools,
+  getSchoolsByDistrict,
+  getSchoolsByType,
+  searchSchools,
+} from "../src/services/schoolService";
 
 export default function SearchSchoolsScreen() {
   const router = useRouter();
@@ -29,17 +34,19 @@ export default function SearchSchoolsScreen() {
   // ------------------------------------------------------------------
 
   const [schools, setSchools] = useState([]);
-
   const [query, setQuery] = useState("");
-
   const [favorites, setFavorites] = useState([]);
 
   const [loading, setLoading] = useState(true);
-
   const [error, setError] = useState(null);
 
+  // Filter states
+  const [selectedDistrict, setSelectedDistrict] = useState("");
+  const [selectedType, setSelectedType] = useState("");
+
   // ------------------------------------------------------------------
-  // Load schools from backend
+  // Load all schools from backend
+  // GET /api/schools
   // ------------------------------------------------------------------
 
   const loadSchools = useCallback(async () => {
@@ -54,6 +61,10 @@ export default function SearchSchoolsScreen() {
       console.log("Schools received:", data);
 
       setSchools(data || []);
+
+      // Reset filters
+      setSelectedDistrict("");
+      setSelectedType("");
     } catch (err) {
       console.error("School fetch error:", err);
 
@@ -64,7 +75,7 @@ export default function SearchSchoolsScreen() {
   }, []);
 
   // ------------------------------------------------------------------
-  // Load when screen opens
+  // Load schools when screen opens
   // ------------------------------------------------------------------
 
   useEffect(() => {
@@ -72,19 +83,122 @@ export default function SearchSchoolsScreen() {
   }, [loadSchools]);
 
   // ------------------------------------------------------------------
-  // Filter schools
+  // Search schools
+  // GET /api/schools/search?query={query}
   // ------------------------------------------------------------------
 
-  const filtered = schools.filter((school) => {
-    const q = query.toLowerCase().trim();
+  const handleSearch = useCallback(async (text) => {
+    setQuery(text);
 
-    if (!q) return true;
+    try {
+      setError(null);
 
-    return (
-      school.name?.toLowerCase().includes(q) ||
-      school.location?.toLowerCase().includes(q)
-    );
-  });
+      // If search box is empty, load all schools
+      if (!text.trim()) {
+        setLoading(true);
+
+        const data = await fetchSchools();
+
+        setSchools(data || []);
+
+        setSelectedDistrict("");
+        setSelectedType("");
+
+        return;
+      }
+
+      setLoading(true);
+
+      console.log("Searching schools:", text);
+
+      const data = await searchSchools(text);
+
+      console.log("Search results:", data);
+
+      setSchools(data || []);
+
+      setSelectedDistrict("");
+      setSelectedType("");
+    } catch (err) {
+      console.error("School search error:", err);
+
+      setError("Unable to search schools.");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // ------------------------------------------------------------------
+  // Filter schools by district
+  // GET /api/schools/district/{district}
+  // ------------------------------------------------------------------
+
+  const handleDistrictFilter = useCallback(async (district) => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      setSelectedDistrict(district);
+      setSelectedType("");
+      setQuery("");
+
+      console.log("Filtering schools by district:", district);
+
+      const data = await getSchoolsByDistrict(district);
+
+      console.log("District schools:", data);
+
+      setSchools(data || []);
+    } catch (err) {
+      console.error("District filter error:", err);
+
+      setError("Unable to filter schools by district.");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // ------------------------------------------------------------------
+  // Filter schools by type
+  // GET /api/schools/type/{type}
+  // ------------------------------------------------------------------
+
+  const handleTypeFilter = useCallback(async (type) => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      setSelectedType(type);
+      setSelectedDistrict("");
+      setQuery("");
+
+      console.log("Filtering schools by type:", type);
+
+      const data = await getSchoolsByType(type);
+
+      console.log("School type results:", data);
+
+      setSchools(data || []);
+    } catch (err) {
+      console.error("School type filter error:", err);
+
+      setError("Unable to filter schools by type.");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // ------------------------------------------------------------------
+  // Clear all filters
+  // ------------------------------------------------------------------
+
+  const handleShowAll = useCallback(async () => {
+    setQuery("");
+    setSelectedDistrict("");
+    setSelectedType("");
+
+    await loadSchools();
+  }, [loadSchools]);
 
   // ------------------------------------------------------------------
   // Toggle favorite
@@ -100,6 +214,7 @@ export default function SearchSchoolsScreen() {
 
   // ------------------------------------------------------------------
   // Select school
+  // Navigate to SchoolDetailsScreen
   // ------------------------------------------------------------------
 
   const handleSchoolPress = useCallback(
@@ -107,15 +222,13 @@ export default function SearchSchoolsScreen() {
       console.log("Selected Child:", childId);
       console.log("Selected School:", school.id);
 
-      // Later navigate to application form
       router.push({
-        pathname: "/ApplicationFormScreen",
+        pathname: "/SchoolDetailsScreen",
 
         params: {
           childId: childId,
           childName: childName,
           schoolId: school.id,
-          schoolName: school.name,
         },
       });
     },
@@ -123,7 +236,7 @@ export default function SearchSchoolsScreen() {
   );
 
   // ------------------------------------------------------------------
-  // Render School
+  // Render School Card
   // ------------------------------------------------------------------
 
   const renderItem = ({ item }) => (
@@ -135,21 +248,27 @@ export default function SearchSchoolsScreen() {
     />
   );
 
+  // ------------------------------------------------------------------
+  // Empty List
+  // ------------------------------------------------------------------
+
   const ListEmpty = () => (
     <View style={styles.emptyContainer}>
       <Ionicons name="search-outline" size={48} color="#C8C8C8" />
 
       <Text style={styles.emptyText}>No schools found</Text>
 
-      <Text style={styles.emptySubText}>Try a different name or area.</Text>
+      <Text style={styles.emptySubText}>
+        Try a different school name, district, or type.
+      </Text>
     </View>
   );
 
   // ------------------------------------------------------------------
-  // Loading
+  // Initial Loading
   // ------------------------------------------------------------------
 
-  if (loading) {
+  if (loading && schools.length === 0) {
     return (
       <SafeAreaView style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#388E3C" />
@@ -163,7 +282,7 @@ export default function SearchSchoolsScreen() {
   // Error
   // ------------------------------------------------------------------
 
-  if (error) {
+  if (error && schools.length === 0) {
     return (
       <SafeAreaView style={styles.loadingContainer}>
         <Ionicons name="alert-circle-outline" size={50} color="#E53935" />
@@ -227,23 +346,120 @@ export default function SearchSchoolsScreen() {
 
           <TextInput
             style={styles.searchInput}
-            placeholder="Search by school name or area..."
+            placeholder="Search by school name or code..."
             placeholderTextColor="#B0B0B0"
             value={query}
-            onChangeText={setQuery}
+            onChangeText={handleSearch}
             returnKeyType="search"
           />
+
+          {query.length > 0 && (
+            <TouchableOpacity onPress={() => handleSearch("")}>
+              <Ionicons name="close-circle" size={18} color="#9E9E9E" />
+            </TouchableOpacity>
+          )}
         </View>
       </View>
+
+      {/* Filters */}
+
+      <View style={styles.filterContainer}>
+        {/* All */}
+
+        <TouchableOpacity
+          style={[
+            styles.filterButton,
+            !selectedDistrict && !selectedType && !query && styles.activeFilter,
+          ]}
+          onPress={handleShowAll}
+        >
+          <Text
+            style={[
+              styles.filterText,
+              !selectedDistrict &&
+                !selectedType &&
+                !query &&
+                styles.activeFilterText,
+            ]}
+          >
+            All
+          </Text>
+        </TouchableOpacity>
+
+        {/* Colombo District */}
+
+        <TouchableOpacity
+          style={[
+            styles.filterButton,
+            selectedDistrict === "Colombo" && styles.activeFilter,
+          ]}
+          onPress={() => handleDistrictFilter("Colombo")}
+        >
+          <Text
+            style={[
+              styles.filterText,
+              selectedDistrict === "Colombo" && styles.activeFilterText,
+            ]}
+          >
+            Colombo
+          </Text>
+        </TouchableOpacity>
+
+        {/* National Type */}
+
+        <TouchableOpacity
+          style={[
+            styles.filterButton,
+            selectedType === "National" && styles.activeFilter,
+          ]}
+          onPress={() => handleTypeFilter("National")}
+        >
+          <Text
+            style={[
+              styles.filterText,
+              selectedType === "National" && styles.activeFilterText,
+            ]}
+          >
+            National
+          </Text>
+        </TouchableOpacity>
+
+        {/* Provincial Type */}
+
+        <TouchableOpacity
+          style={[
+            styles.filterButton,
+            selectedType === "Provincial" && styles.activeFilter,
+          ]}
+          onPress={() => handleTypeFilter("Provincial")}
+        >
+          <Text
+            style={[
+              styles.filterText,
+              selectedType === "Provincial" && styles.activeFilterText,
+            ]}
+          >
+            Provincial
+          </Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* Loading while searching/filtering */}
+
+      {loading && schools.length > 0 && (
+        <View style={styles.smallLoading}>
+          <ActivityIndicator size="small" color="#388E3C" />
+        </View>
+      )}
 
       {/* School List */}
 
       <FlatList
-        data={filtered}
+        data={schools}
         keyExtractor={(item) => item.id}
         renderItem={renderItem}
         ListEmptyComponent={ListEmpty}
-        contentContainerStyle={filtered.length === 0 && styles.emptyList}
+        contentContainerStyle={schools.length === 0 && styles.emptyList}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       />
@@ -251,10 +467,10 @@ export default function SearchSchoolsScreen() {
       {/* Footer */}
 
       <View style={styles.footer}>
-        <Text style={styles.footerText}>Can't find your school? </Text>
+        <Text style={styles.footerText}>Can't find your school?</Text>
 
         <TouchableOpacity onPress={() => router.push("/request-school")}>
-          <Text style={styles.footerLink}>Request to Add</Text>
+          <Text style={styles.footerLink}> Request to Add</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>
@@ -280,10 +496,16 @@ const styles = StyleSheet.create({
     color: "#666",
   },
 
+  smallLoading: {
+    paddingBottom: 8,
+    alignItems: "center",
+  },
+
   errorText: {
     marginTop: 15,
     fontSize: 15,
     color: "#E53935",
+    textAlign: "center",
   },
 
   retryButton: {
@@ -347,10 +569,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: "#F5F5F5",
     borderRadius: 12,
-    borderWidth: 1,
-    borderColor: "#EBEBEB",
     paddingHorizontal: 12,
     height: 44,
+    borderWidth: 0,
   },
 
   searchIcon: {
@@ -362,6 +583,41 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#1A1A1A",
     paddingVertical: 0,
+
+    // Remove blue focus line on web
+    outlineStyle: "none",
+    borderWidth: 0,
+  },
+
+  filterContainer: {
+    flexDirection: "row",
+    paddingHorizontal: 16,
+    paddingBottom: 12,
+    gap: 8,
+  },
+
+  filterButton: {
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 20,
+    backgroundColor: "#F5F5F5",
+    borderWidth: 1,
+    borderColor: "#E5E5E5",
+  },
+
+  activeFilter: {
+    backgroundColor: "#388E3C",
+    borderColor: "#388E3C",
+  },
+
+  filterText: {
+    fontSize: 12,
+    color: "#666",
+    fontWeight: "600",
+  },
+
+  activeFilterText: {
+    color: "#FFFFFF",
   },
 
   emptyList: {
@@ -373,6 +629,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     paddingTop: 60,
+    paddingHorizontal: 20,
   },
 
   emptyText: {
@@ -386,6 +643,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: "#B0B0B0",
     marginTop: 6,
+    textAlign: "center",
   },
 
   footer: {

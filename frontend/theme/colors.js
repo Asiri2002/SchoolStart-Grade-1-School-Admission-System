@@ -1,5 +1,3 @@
-// theme/index.js
-
 // ─────────────────────────────────────────────────────────────────────────────
 // Design tokens — single source of truth for all colours in the app
 // ─────────────────────────────────────────────────────────────────────────────
@@ -11,14 +9,28 @@ export const COLORS = {
 
   background: "#F5F7FA",
   card: "#FFFFFF",
+  surface: "#FFFFFF",
 
   textPrimary: "#1E293B",
   textSecondary: "#64748B",
   textMuted: "#94A3B8",
 
   border: "#EFF3F8",
-  white: "#FFFFFF",
+  borderLight: "#F3F4F6",
 
+  white: "#FFFFFF",
+  black: "#000000",
+
+  // ── Upload document colours ──────────────────────────────────────────────
+  iconBackground: "#EEF2FF",
+  iconColor: "#3B5BDB",
+
+  success: "#10B981",
+  successLight: "#D1FAE5",
+
+  shadow: "#000000",
+
+  // ── Status badge colours ─────────────────────────────────────────────────
   statusColor: {
     UNDER_REVIEW: "#D97706",
     INTERVIEW_SCHEDULED: "#2563EB",
@@ -39,9 +51,15 @@ export const COLORS = {
     CANCELLED: "#F3F4F6",
   },
 
+  // ── Avatar palette ───────────────────────────────────────────────────────
   avatarBg: ["#FEF3C7", "#DCFCE7", "#E0F2FE", "#F3E8FF"],
+
   avatarFg: ["#92400E", "#065F46", "#0369A1", "#6B21A8"],
 };
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Status label mapping
+// ─────────────────────────────────────────────────────────────────────────────
 
 export const STATUS_LABELS = {
   UNDER_REVIEW: "Under Review",

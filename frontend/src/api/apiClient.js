@@ -1,14 +1,13 @@
-import axios from 'axios';
-import { getAccessToken } from '../storage/authStorage';
+import axios from "axios";
+import { getAccessToken } from "../storage/authStorage";
 
-export const API_BASE_URL = 'http://localhost:8080/api';
+export const API_BASE_URL = "http://localhost:8080/api";
 
 const apiClient = axios.create({
   baseURL: API_BASE_URL,
   timeout: 15000,
   headers: {
-    'Content-Type': 'application/json',
-    Accept: 'application/json',
+    Accept: "application/json",
   },
 });
 
@@ -21,17 +20,22 @@ apiClient.interceptors.request.use(
         config.headers.Authorization = `Bearer ${token}`;
       }
 
+      // Do not force application/json for FormData requests.
+      if (config.data instanceof FormData) {
+        delete config.headers["Content-Type"];
+        delete config.headers["content-type"];
+      } else {
+        config.headers["Content-Type"] = "application/json";
+      }
+
       return config;
     } catch (error) {
-      console.error(
-        'Failed to retrieve access token:',
-        error
-      );
+      console.error("Failed to retrieve access token:", error);
 
       return config;
     }
   },
-  (error) => Promise.reject(error)
+  (error) => Promise.reject(error),
 );
 
 apiClient.interceptors.response.use(
@@ -39,25 +43,15 @@ apiClient.interceptors.response.use(
 
   (error) => {
     if (error.response) {
-      console.error(
-        'API Error:',
-        error.response.status,
-        error.response.data
-      );
+      console.error("API Error:", error.response.status, error.response.data);
     } else if (error.request) {
-      console.error(
-        'No response received from:',
-        API_BASE_URL
-      );
+      console.error("No response received from:", API_BASE_URL);
     } else {
-      console.error(
-        'API Request Error:',
-        error.message
-      );
+      console.error("API Request Error:", error.message);
     }
 
     return Promise.reject(error);
-  }
+  },
 );
 
 export default apiClient;
