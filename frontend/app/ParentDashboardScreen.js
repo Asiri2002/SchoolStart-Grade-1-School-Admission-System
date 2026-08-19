@@ -111,6 +111,8 @@ export default function ParentDashboardScreen() {
         // Get dashboard data from Spring Boot
         const data = await fetchParentDashboard();
 
+        console.log("Dashboard response:", data);
+
         // Save dashboard data
         setDashboardData({
           ...data,
@@ -231,14 +233,44 @@ export default function ParentDashboardScreen() {
   |--------------------------------------------------------------------------
   | Dashboard Data
   |--------------------------------------------------------------------------
+  |
+  | Backend returns:
+  |
+  | applications: [
+  |   {
+  |     applicationId,
+  |     childFullName,
+  |     schoolName,
+  |     status,
+  |     submissionDate
+  |   }
+  | ]
+  |
   */
 
-  const {
-    parentName,
-    totalApplications = 0,
-    children = [],
-    recentApplications = [],
-  } = dashboardData || {};
+  const { parentName, children = [], applications = [] } = dashboardData || {};
+
+  /*
+  |--------------------------------------------------------------------------
+  | Total Applications
+  |--------------------------------------------------------------------------
+  */
+
+  const totalApplications = applications.length;
+
+  /*
+  |--------------------------------------------------------------------------
+  | Recent Applications
+  |--------------------------------------------------------------------------
+  |
+  | Sort newest applications first using submissionDate
+  | and display only the latest 5.
+  |
+  */
+
+  const recentApplications = [...applications]
+    .sort((a, b) => new Date(b.submissionDate) - new Date(a.submissionDate))
+    .slice(0, 5);
 
   /*
   |--------------------------------------------------------------------------
@@ -269,13 +301,14 @@ export default function ParentDashboardScreen() {
             onBellPress={() =>
               Alert.alert("Notifications", "No new notifications.")
             }
+            onLogout={handleLogout}
           />
 
           {/* Total Applications */}
 
           <ApplicationSummaryCard
             totalApplications={totalApplications}
-            onViewAll={() => setActiveTab("Applications")}
+            onViewAll={() => router.push("/applications")}
           />
 
           {/* Dashboard Body */}
@@ -307,7 +340,7 @@ export default function ParentDashboardScreen() {
             <SectionHeader
               title="Recent Applications"
               actionLabel="See All"
-              onAction={() => setActiveTab("Applications")}
+              onAction={() => router.push("/applications")}
             />
 
             {recentApplications.length === 0 ? (
@@ -315,14 +348,18 @@ export default function ParentDashboardScreen() {
                 No applications submitted yet.
               </Text>
             ) : (
-              recentApplications.map((application) => (
+              recentApplications.map((application, index) => (
                 <ApplicationCard
-                  key={application.applicationId}
+                  key={application.applicationId || application.id || index}
                   application={application}
                   onPress={() =>
                     Alert.alert(
                       "Application",
-                      `School: ${application.schoolName}\nStatus: ${application.status}`,
+                      `Child: ${application.childFullName || "N/A"}\nSchool: ${
+                        application.schoolName || "N/A"
+                      }\nStatus: ${application.status || "N/A"}\nSubmitted: ${
+                        application.submissionDate || "N/A"
+                      }`,
                     )
                   }
                 />
@@ -333,7 +370,7 @@ export default function ParentDashboardScreen() {
 
         {/* Bottom Navigation */}
 
-        <BottomNavigation activeTab="Home" />
+        <BottomNavigation activeTab={activeTab} onTabPress={setActiveTab} />
       </View>
     </SafeAreaView>
   );

@@ -48,19 +48,28 @@ export const updateParentProfile = async (profileData) => {
 
 export const fetchParentDashboard = async () => {
   try {
-    // Get parent profile
-    const response = await apiClient.get("/parent/profile");
+    // -----------------------------------------------------
+    // 1. Get parent profile
+    // -----------------------------------------------------
 
-    const parentData = response.data;
+    const parentResponse = await apiClient.get("/parent/profile");
 
-    console.log("Parent dashboard response:", parentData);
+    const parentData = parentResponse.data;
 
-    // Get child IDs
+    console.log("Parent profile:", parentData);
+
+    // -----------------------------------------------------
+    // 2. Get child IDs
+    // -----------------------------------------------------
+
     const childIds = parentData?.childIds || [];
 
     let children = [];
 
-    // Fetch child details
+    // -----------------------------------------------------
+    // 3. Fetch child details
+    // -----------------------------------------------------
+
     if (childIds.length > 0) {
       const childResponses = await Promise.all(
         childIds.map(async (childId) => {
@@ -83,10 +92,40 @@ export const fetchParentDashboard = async () => {
       children = childResponses.filter((child) => child !== null);
     }
 
-    // Return parent data + actual children
+    // -----------------------------------------------------
+    // 4. Get parent's applications
+    // -----------------------------------------------------
+
+    let applications = [];
+
+    try {
+      const applicationResponse = await apiClient.get("/applications");
+
+      applications = Array.isArray(applicationResponse.data)
+        ? applicationResponse.data
+        : [];
+
+      console.log("Parent applications:", applications);
+    } catch (error) {
+      console.error(
+        "Failed to fetch applications:",
+        error?.response?.data || error.message,
+      );
+
+      // Keep dashboard working even if applications fail
+      applications = [];
+    }
+
+    // -----------------------------------------------------
+    // 5. Return complete dashboard data
+    // -----------------------------------------------------
+
     return {
       ...parentData,
+
       children,
+
+      applications,
     };
   } catch (error) {
     console.error(

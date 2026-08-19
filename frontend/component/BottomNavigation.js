@@ -1,4 +1,3 @@
-
 import {
   Platform,
   StyleSheet,
@@ -23,7 +22,7 @@ const TABS = [
     key: "Applications",
     icon: "document-text",
     iconOutline: "document-text-outline",
-    route: "/ApplicationsScreen",
+    route: "/applications",
   },
   {
     key: "Children",
@@ -39,26 +38,20 @@ const TABS = [
   },
 ];
 
-const BottomNavigation = ({ activeTab = "Home", onTabPress }) => {
+const BottomNavigation = ({ activeTab = "Home" }) => {
   const handleTabPress = (tabKey) => {
-    // If parent wants to handle the tab press
-    if (onTabPress) {
-      onTabPress(tabKey);
-      return;
-    }
-
     const selectedTab = TABS.find((item) => item.key === tabKey);
 
     if (!selectedTab) {
       return;
     }
 
-    // Already on this screen
     if (activeTab === tabKey) {
       return;
     }
 
-    // Expo Router navigation
+    console.log("Bottom navigation pressed:", tabKey, selectedTab.route);
+
     router.replace(selectedTab.route);
   };
 
@@ -100,7 +93,6 @@ const BottomNavigation = ({ activeTab = "Home", onTabPress }) => {
 const styles = StyleSheet.create({
   container: {
     flexDirection: "row",
-
     backgroundColor: COLORS.card,
 
     borderTopWidth: 1,
@@ -110,7 +102,6 @@ const styles = StyleSheet.create({
 
     paddingBottom: Platform.OS === "ios" ? 20 : 10,
 
-    // Fix React Native Web shadow warning
     boxShadow: "0px -3px 8px rgba(0, 0, 0, 0.08)",
 
     elevation: 12,
