@@ -1,42 +1,42 @@
-import React, { useState } from 'react';
+import { useState } from "react";
 
 import {
-  View,
+  ActivityIndicator,
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
   Text,
   TextInput,
   TouchableOpacity,
-  KeyboardAvoidingView,
-  ScrollView,
-  Platform,
-  ActivityIndicator,
-  Alert,
-} from 'react-native';
+  View,
+} from "react-native";
 
-import { Ionicons } from '@expo/vector-icons';
-import { router } from 'expo-router';
+import { Ionicons } from "@expo/vector-icons";
+import { router } from "expo-router";
 
-import authStyles, { COLORS } from '../src/style/authStyles';
-import { loginUser } from '../src/services/authService';
+import { loginUser } from "../src/services/authService";
+import authStyles, { COLORS } from "../src/style/authStyles";
 
 export default function LoginScreen() {
-  const [usernameOrEmail, setUsernameOrEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [usernameOrEmail, setUsernameOrEmail] = useState("");
+  const [password, setPassword] = useState("");
 
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
-  const [errorMessage, setErrorMessage] = useState('');
+  const [errorMessage, setErrorMessage] = useState("");
   const [fieldErrors, setFieldErrors] = useState({});
 
   const validateForm = () => {
     const errors = {};
 
     if (!usernameOrEmail.trim()) {
-      errors.usernameOrEmail = 'Username or Email is required';
+      errors.usernameOrEmail = "Username or Email is required";
     }
 
     if (!password) {
-      errors.password = 'Password is required';
+      errors.password = "Password is required";
     }
 
     setFieldErrors(errors);
@@ -45,7 +45,7 @@ export default function LoginScreen() {
   };
 
   const handleLogin = async () => {
-    setErrorMessage('');
+    setErrorMessage("");
 
     if (!validateForm()) {
       return;
@@ -54,16 +54,70 @@ export default function LoginScreen() {
     setIsLoading(true);
 
     try {
-      await loginUser(
-        usernameOrEmail.trim(),
-        password
-      );
+      // Login and get the response
+      const response = await loginUser(usernameOrEmail.trim(), password);
 
-      router.replace('/ParentDashboardScreen');
+      console.log("Login response:", response);
+
+      /*
+       * Depending on your backend AuthResponse structure,
+       * the role may be in:
+       *
+       * response.role
+       * response.user.role
+       *
+       * So we support both.
+       */
+      const role =
+        response?.role ||
+        response?.user?.role ||
+        response?.data?.role ||
+        response?.data?.user?.role;
+
+      console.log("Logged in user role:", role);
+
+      if (!role) {
+        throw new Error("User role was not returned from the server.");
+      }
+
+      // Remove possible lowercase differences
+      const normalizedRole = role.toString().toUpperCase();
+
+      // ------------------------------------------
+      // EDUCATION ADMIN
+      // ------------------------------------------
+      if (normalizedRole === "EDUCATION_ADMIN") {
+        router.replace("/EducationAdminDashboardScreen");
+        return;
+      }
+
+      // ------------------------------------------
+      // SCHOOL ADMIN
+      // ------------------------------------------
+      if (normalizedRole === "SCHOOL_ADMIN") {
+        router.replace("/SchoolAdminDashboardScreen");
+        return;
+      }
+
+      // ------------------------------------------
+      // PARENT
+      // ------------------------------------------
+      if (normalizedRole === "PARENT") {
+        router.replace("/ParentDashboardScreen");
+        return;
+      }
+
+      // ------------------------------------------
+      // UNKNOWN ROLE
+      // ------------------------------------------
+      throw new Error(`Unsupported user role: ${normalizedRole}`);
     } catch (error) {
+      console.error("Login error:", error);
+
       setErrorMessage(
         error?.message ||
-          'Login failed. Please check your credentials.'
+          error?.response?.data?.message ||
+          "Login failed. Please check your credentials.",
       );
     } finally {
       setIsLoading(false);
@@ -72,14 +126,14 @@ export default function LoginScreen() {
 
   const handleForgotPassword = () => {
     Alert.alert(
-      'Forgot Password',
-      'Please contact your school administration or system administrator to reset your password.'
+      "Forgot Password",
+      "Please contact your school administration or system administrator to reset your password.",
     );
   };
 
   return (
     <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
       style={{ flex: 1 }}
     >
       <ScrollView
@@ -89,27 +143,17 @@ export default function LoginScreen() {
         {/* Logo */}
         <View style={authStyles.headerSection}>
           <View style={authStyles.logoContainer}>
-            <Ionicons
-              name="school-outline"
-              size={42}
-              color={COLORS.white}
-            />
+            <Ionicons name="school-outline" size={42} color={COLORS.white} />
           </View>
 
-          <Text style={authStyles.brandTitle}>
-            SchoolStart
-          </Text>
+          <Text style={authStyles.brandTitle}>SchoolStart</Text>
 
-          <Text style={authStyles.brandSubtitle}>
-            Grade 1 Admission
-          </Text>
+          <Text style={authStyles.brandSubtitle}>Grade 1 Admission</Text>
         </View>
 
         {/* Welcome */}
         <View style={authStyles.welcomeSection}>
-          <Text style={authStyles.welcomeTitle}>
-            Welcome Back!
-          </Text>
+          <Text style={authStyles.welcomeTitle}>Welcome Back!</Text>
 
           <Text style={authStyles.welcomeSubtitle}>
             Please login to continue
@@ -121,8 +165,8 @@ export default function LoginScreen() {
           <View style={authStyles.errorBanner}>
             <View
               style={{
-                flexDirection: 'row',
-                alignItems: 'center',
+                flexDirection: "row",
+                alignItems: "center",
               }}
             >
               <Ionicons
@@ -150,15 +194,12 @@ export default function LoginScreen() {
         <View style={authStyles.formContainer}>
           {/* Username / Email */}
           <View style={authStyles.inputGroup}>
-            <Text style={authStyles.inputLabel}>
-              Username or Email
-            </Text>
+            <Text style={authStyles.inputLabel}>Username or Email</Text>
 
             <View
               style={[
                 authStyles.inputWrapper,
-                fieldErrors.usernameOrEmail &&
-                  authStyles.inputWrapperError,
+                fieldErrors.usernameOrEmail && authStyles.inputWrapperError,
               ]}
             >
               <Ionicons
@@ -168,10 +209,7 @@ export default function LoginScreen() {
               />
 
               <TextInput
-                style={[
-                  authStyles.input,
-                  { marginLeft: 10 },
-                ]}
+                style={[authStyles.input, { marginLeft: 10 }]}
                 placeholder="Enter username or email"
                 placeholderTextColor={COLORS.textPlaceholder}
                 value={usernameOrEmail}
@@ -201,15 +239,12 @@ export default function LoginScreen() {
 
           {/* Password */}
           <View style={authStyles.inputGroup}>
-            <Text style={authStyles.inputLabel}>
-              Password
-            </Text>
+            <Text style={authStyles.inputLabel}>Password</Text>
 
             <View
               style={[
                 authStyles.inputWrapper,
-                fieldErrors.password &&
-                  authStyles.inputWrapperError,
+                fieldErrors.password && authStyles.inputWrapperError,
               ]}
             >
               <Ionicons
@@ -219,10 +254,7 @@ export default function LoginScreen() {
               />
 
               <TextInput
-                style={[
-                  authStyles.input,
-                  { marginLeft: 10 },
-                ]}
+                style={[authStyles.input, { marginLeft: 10 }]}
                 placeholder="Enter your password"
                 placeholderTextColor={COLORS.textPlaceholder}
                 value={password}
@@ -244,16 +276,11 @@ export default function LoginScreen() {
 
               <TouchableOpacity
                 style={authStyles.iconButton}
-                onPress={() =>
-                  setShowPassword((prev) => !prev)
-                }
+                onPress={() => setShowPassword((prev) => !prev)}
+                disabled={isLoading}
               >
                 <Ionicons
-                  name={
-                    showPassword
-                      ? 'eye-outline'
-                      : 'eye-off-outline'
-                  }
+                  name={showPassword ? "eye-outline" : "eye-off-outline"}
                   size={22}
                   color={COLORS.textMuted}
                 />
@@ -271,6 +298,7 @@ export default function LoginScreen() {
           <View style={authStyles.forgotPasswordContainer}>
             <TouchableOpacity
               onPress={handleForgotPassword}
+              disabled={isLoading}
             >
               <Text style={authStyles.forgotPasswordText}>
                 Forgot Password?
@@ -282,8 +310,7 @@ export default function LoginScreen() {
           <TouchableOpacity
             style={[
               authStyles.primaryButton,
-              isLoading &&
-                authStyles.primaryButtonDisabled,
+              isLoading && authStyles.primaryButtonDisabled,
             ]}
             onPress={handleLogin}
             disabled={isLoading}
@@ -292,8 +319,8 @@ export default function LoginScreen() {
             {isLoading ? (
               <View
                 style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
+                  flexDirection: "row",
+                  alignItems: "center",
                 }}
               >
                 <ActivityIndicator
@@ -302,34 +329,22 @@ export default function LoginScreen() {
                   style={{ marginRight: 8 }}
                 />
 
-                <Text
-                  style={authStyles.primaryButtonText}
-                >
-                  Logging in...
-                </Text>
+                <Text style={authStyles.primaryButtonText}>Logging in...</Text>
               </View>
             ) : (
-              <Text
-                style={authStyles.primaryButtonText}
-              >
-                Login
-              </Text>
+              <Text style={authStyles.primaryButtonText}>Login</Text>
             )}
           </TouchableOpacity>
 
           {/* Register */}
           <View style={authStyles.footerContainer}>
-            <Text style={authStyles.footerText}>
-              Don't have an account?
-            </Text>
+            <Text style={authStyles.footerText}>Don't have an account?</Text>
 
             <TouchableOpacity
-              onPress={() => router.push('/RegisterScreen')}
+              onPress={() => router.push("/RegisterScreen")}
               disabled={isLoading}
             >
-              <Text style={authStyles.footerLink}>
-                Register
-              </Text>
+              <Text style={authStyles.footerLink}>Register</Text>
             </TouchableOpacity>
           </View>
         </View>
