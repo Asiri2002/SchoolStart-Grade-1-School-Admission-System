@@ -26,55 +26,38 @@ export default function EditSchoolScreen() {
 
   const schoolId = Array.isArray(id) ? id[0] : id;
 
-  const [form, setForm] = useState({
-    name: "",
-    code: "",
-    district: "",
-    type: "",
-    address: "",
-    email: "",
-    phone: "",
-    principalName: "",
-    capacity: "",
-    availableSeats: "",
-    imageUrl: "",
-    description: "",
-  });
+  // --------------------------------------------------
+  // Form states
+  // --------------------------------------------------
+
+  const [name, setName] = useState("");
+  const [code, setCode] = useState("");
+  const [district, setDistrict] = useState("");
+  const [type, setType] = useState("");
+  const [address, setAddress] = useState("");
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const [principalName, setPrincipalName] = useState("");
+  const [capacity, setCapacity] = useState("");
+  const [availableSeats, setAvailableSeats] = useState("");
+  const [imageUrl, setImageUrl] = useState("");
+  const [description, setDescription] = useState("");
+
+  // --------------------------------------------------
+  // Loading states
+  // --------------------------------------------------
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
-  // --------------------------------
-  // Go back to schools
-  // --------------------------------
-  const goToSchools = () => {
-    router.replace("/EduSchoolsScreen");
-  };
-
-  // --------------------------------
-  // Update field
-  // --------------------------------
-  const updateField = (field, value) => {
-    setForm((previous) => ({
-      ...previous,
-      [field]: value,
-    }));
-  };
-
-  // --------------------------------
+  // --------------------------------------------------
   // Load school
-  // --------------------------------
+  // --------------------------------------------------
+
   useEffect(() => {
     if (!schoolId) {
       setLoading(false);
-
-      Alert.alert("Error", "School ID is missing.", [
-        {
-          text: "OK",
-          onPress: goToSchools,
-        },
-      ]);
-
+      Alert.alert("Error", "School ID is missing.");
       return;
     }
 
@@ -85,271 +68,206 @@ export default function EditSchoolScreen() {
     try {
       setLoading(true);
 
-      console.log("================================");
-      console.log("LOADING SCHOOL");
-      console.log("School ID:", schoolId);
-      console.log("GET:", `/schools/${schoolId}`);
-      console.log("================================");
+      console.log("Loading school:", schoolId);
 
       const response = await apiClient.get(`/schools/${schoolId}`);
 
-      console.log("School response:", JSON.stringify(response.data, null, 2));
+      console.log("School response:", response.data);
 
       const school = response.data;
 
-      setForm({
-        name: school?.name ?? "",
-        code: school?.code ?? "",
-        district: school?.district ?? "",
-        type: school?.type ?? "",
-        address: school?.address ?? "",
-        email: school?.email ?? "",
-        phone: school?.phone ?? "",
-        principalName: school?.principalName ?? "",
-
-        capacity:
-          school?.capacity !== null && school?.capacity !== undefined
-            ? String(school.capacity)
-            : "",
-
-        availableSeats:
-          school?.availableSeats !== null &&
-          school?.availableSeats !== undefined
-            ? String(school.availableSeats)
-            : "",
-
-        imageUrl: school?.imageUrl ?? "",
-        description: school?.description ?? "",
-      });
+      setName(school.name ?? "");
+      setCode(school.code ?? "");
+      setDistrict(school.district ?? "");
+      setType(school.type ?? "");
+      setAddress(school.address ?? "");
+      setEmail(school.email ?? "");
+      setPhone(school.phone ?? "");
+      setPrincipalName(school.principalName ?? "");
+      setCapacity(
+        school.capacity !== undefined && school.capacity !== null
+          ? String(school.capacity)
+          : "",
+      );
+      setAvailableSeats(
+        school.availableSeats !== undefined && school.availableSeats !== null
+          ? String(school.availableSeats)
+          : "",
+      );
+      setImageUrl(school.imageUrl ?? "");
+      setDescription(school.description ?? "");
     } catch (error) {
-      console.error("================================");
-      console.error("LOAD SCHOOL FAILED");
-      console.error("Status:", error?.response?.status);
-      console.error(
-        "Response:",
-        JSON.stringify(error?.response?.data, null, 2),
-      );
-      console.error("Message:", error?.message);
-      console.error("================================");
+      console.error("Load school error:", error);
 
-      const responseData = error?.response?.data;
+      const message =
+        error?.response?.data?.message ||
+        error?.response?.data?.error ||
+        error?.message ||
+        "Unable to load school details.";
 
-      Alert.alert(
-        "Error",
-        responseData?.message ||
-          responseData?.error ||
-          error?.message ||
-          "Unable to load school information.",
-        [
-          {
-            text: "OK",
-            onPress: goToSchools,
-          },
-        ],
-      );
+      Alert.alert("Error", message);
     } finally {
       setLoading(false);
     }
   };
 
-  // --------------------------------
-  // Submit update
-  // --------------------------------
-  const handleSubmit = async () => {
-    console.log("================================");
-    console.log("UPDATE SCHOOL BUTTON CLICKED");
-    console.log("School ID:", schoolId);
-    console.log("================================");
+  // --------------------------------------------------
+  // Back
+  // --------------------------------------------------
 
+  const handleBack = () => {
+    router.replace("/EduSchoolsScreen");
+  };
+
+  // --------------------------------------------------
+  // Validation
+  // --------------------------------------------------
+
+  const validateForm = () => {
+    if (!name.trim()) {
+      Alert.alert("Validation Error", "School name is required.");
+      return false;
+    }
+
+    if (!code.trim()) {
+      Alert.alert("Validation Error", "School code is required.");
+      return false;
+    }
+
+    if (!district.trim()) {
+      Alert.alert("Validation Error", "District is required.");
+      return false;
+    }
+
+    if (!type.trim()) {
+      Alert.alert("Validation Error", "School type is required.");
+      return false;
+    }
+
+    if (!address.trim()) {
+      Alert.alert("Validation Error", "Address is required.");
+      return false;
+    }
+
+    if (!email.trim()) {
+      Alert.alert("Validation Error", "Email is required.");
+      return false;
+    }
+
+    if (!phone.trim()) {
+      Alert.alert("Validation Error", "Phone is required.");
+      return false;
+    }
+
+    if (!principalName.trim()) {
+      Alert.alert("Validation Error", "Principal name is required.");
+      return false;
+    }
+
+    if (!capacity.trim()) {
+      Alert.alert("Validation Error", "Capacity is required.");
+      return false;
+    }
+
+    if (Number(capacity) <= 0) {
+      Alert.alert("Validation Error", "Capacity must be greater than 0.");
+      return false;
+    }
+
+    if (!availableSeats.trim()) {
+      Alert.alert("Validation Error", "Available seats are required.");
+      return false;
+    }
+
+    if (Number(availableSeats) < 0) {
+      Alert.alert("Validation Error", "Available seats cannot be negative.");
+      return false;
+    }
+
+    if (Number(availableSeats) > Number(capacity)) {
+      Alert.alert(
+        "Validation Error",
+        "Available seats cannot be greater than capacity.",
+      );
+      return false;
+    }
+
+    return true;
+  };
+
+  // --------------------------------------------------
+  // Update school
+  // --------------------------------------------------
+
+  const handleSubmit = async () => {
     if (saving) {
       return;
     }
 
-    // --------------------------------
-    // Check ID
-    // --------------------------------
     if (!schoolId) {
       Alert.alert("Error", "School ID is missing.");
       return;
     }
 
-    // --------------------------------
-    // Required fields
-    // --------------------------------
-    if (!form.name.trim()) {
-      Alert.alert("Validation Error", "School name is required.");
+    if (!validateForm()) {
       return;
     }
 
-    if (!form.code.trim()) {
-      Alert.alert("Validation Error", "School code is required.");
-      return;
-    }
-
-    if (!form.district.trim()) {
-      Alert.alert("Validation Error", "District is required.");
-      return;
-    }
-
-    if (!form.type.trim()) {
-      Alert.alert("Validation Error", "School type is required.");
-      return;
-    }
-
-    if (!form.address.trim()) {
-      Alert.alert("Validation Error", "School address is required.");
-      return;
-    }
-
-    if (!form.email.trim()) {
-      Alert.alert("Validation Error", "School email is required.");
-      return;
-    }
-
-    // --------------------------------
-    // Email validation
-    // --------------------------------
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-    if (!emailRegex.test(form.email.trim())) {
-      Alert.alert("Validation Error", "Please enter a valid email address.");
-      return;
-    }
-
-    // --------------------------------
-    // Phone
-    // --------------------------------
-    if (!form.phone.trim()) {
-      Alert.alert("Validation Error", "School phone number is required.");
-      return;
-    }
-
-    // --------------------------------
-    // Principal
-    // --------------------------------
-    if (!form.principalName.trim()) {
-      Alert.alert("Validation Error", "Principal name is required.");
-      return;
-    }
-
-    // --------------------------------
-    // Capacity
-    // --------------------------------
-    const capacity = Number(form.capacity);
-    const availableSeats = Number(form.availableSeats);
-
-    if (form.capacity.trim() === "" || Number.isNaN(capacity) || capacity < 1) {
-      Alert.alert("Validation Error", "Capacity must be at least 1.");
-      return;
-    }
-
-    if (
-      form.availableSeats.trim() === "" ||
-      Number.isNaN(availableSeats) ||
-      availableSeats < 0
-    ) {
-      Alert.alert("Validation Error", "Available seats cannot be negative.");
-      return;
-    }
-
-    if (availableSeats > capacity) {
-      Alert.alert(
-        "Validation Error",
-        "Available seats cannot be greater than capacity.",
-      );
-      return;
-    }
-
-    // --------------------------------
-    // Prepare request
-    // --------------------------------
-    const schoolData = {
-      name: form.name.trim(),
-      code: form.code.trim().toUpperCase(),
-      district: form.district.trim(),
-      type: form.type.trim(),
-      address: form.address.trim(),
-      email: form.email.trim(),
-      phone: form.phone.trim(),
-      principalName: form.principalName.trim(),
-      capacity: capacity,
-      availableSeats: availableSeats,
-      imageUrl: form.imageUrl.trim() || null,
-      description: form.description.trim() || null,
-    };
-
-    console.log("================================");
-    console.log("SENDING SCHOOL UPDATE");
-    console.log("PUT:", `/schools/${schoolId}`);
-    console.log("Payload:", JSON.stringify(schoolData, null, 2));
-    console.log("================================");
+    setSaving(true);
 
     try {
-      setSaving(true);
+      const schoolData = {
+        name: name.trim(),
+        code: code.trim(),
+        district: district.trim(),
+        type: type.trim(),
+        address: address.trim(),
+        email: email.trim(),
+        phone: phone.trim(),
+        principalName: principalName.trim(),
+        capacity: Number(capacity),
+        availableSeats: Number(availableSeats),
+        imageUrl: imageUrl.trim(),
+        description: description.trim(),
+      };
 
-      // --------------------------------
-      // PUT request
-      // --------------------------------
+      console.log("=================================");
+      console.log("UPDATING SCHOOL");
+      console.log("School ID:", schoolId);
+      console.log("Update data:", schoolData);
+      console.log("=================================");
+
       const response = await apiClient.put(`/schools/${schoolId}`, schoolData);
 
-      console.log("================================");
-      console.log("UPDATE SUCCESSFUL");
-      console.log("Status:", response.status);
-      console.log("Response:", JSON.stringify(response.data, null, 2));
-      console.log("================================");
+      console.log("Update response:", response.data);
 
-      Alert.alert(
-        "Success",
-        "School has been updated successfully.",
-        [
-          {
-            text: "OK",
-            onPress: () => {
-              router.replace("/EduSchoolsScreen");
-            },
-          },
-        ],
-        {
-          cancelable: false,
-        },
-      );
+      // ----------------------------------------------
+      // IMPORTANT
+      // Navigate immediately after successful update.
+      // ----------------------------------------------
+
+      router.replace("/EduSchoolsScreen");
     } catch (error) {
-      console.error("================================");
-      console.error("UPDATE SCHOOL FAILED");
+      console.error("=================================");
+      console.error("UPDATE SCHOOL ERROR");
+      console.error(error);
+      console.error("Response:", error?.response?.data);
       console.error("Status:", error?.response?.status);
-      console.error(
-        "Response:",
-        JSON.stringify(error?.response?.data, null, 2),
-      );
-      console.error("Message:", error?.message);
-      console.error("================================");
+      console.error("=================================");
 
       const responseData = error?.response?.data;
 
-      // --------------------------------
-      // Backend validation errors
-      // --------------------------------
+      let message = "Unable to update school.";
+
       if (responseData?.errors) {
-        const validationMessage = Object.entries(responseData.errors)
-          .map(([field, message]) => `${field}: ${message}`)
-          .join("\n");
-
-        Alert.alert(
-          "Validation Failed",
-          validationMessage || "Please check the entered information.",
-        );
-
-        return;
+        message = Object.values(responseData.errors).join("\n");
+      } else if (responseData?.message) {
+        message = responseData.message;
+      } else if (responseData?.error) {
+        message = responseData.error;
+      } else if (error?.message) {
+        message = error.message;
       }
-
-      // --------------------------------
-      // General error
-      // --------------------------------
-      const message =
-        responseData?.message ||
-        responseData?.error ||
-        error?.message ||
-        "Unable to update school.";
 
       Alert.alert("Update Failed", message);
     } finally {
@@ -357,248 +275,324 @@ export default function EditSchoolScreen() {
     }
   };
 
-  // --------------------------------
-  // Reusable input
-  // --------------------------------
-  const renderInput = ({
-    label,
-    field,
-    placeholder,
-    keyboardType = "default",
-    multiline = false,
-    autoCapitalize = "sentences",
-  }) => (
-    <View style={styles.inputGroup}>
-      <Text style={styles.label}>{label}</Text>
-
-      <TextInput
-        style={[styles.input, multiline && styles.textArea]}
-        value={form[field]}
-        onChangeText={(value) => updateField(field, value)}
-        placeholder={placeholder}
-        placeholderTextColor={colors.text.placeholder}
-        keyboardType={keyboardType}
-        autoCapitalize={autoCapitalize}
-        multiline={multiline}
-        textAlignVertical={multiline ? "top" : "center"}
-        editable={!saving}
-      />
-    </View>
-  );
-
-  // --------------------------------
+  // --------------------------------------------------
   // Loading screen
-  // --------------------------------
+  // --------------------------------------------------
+
   if (loading) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={styles.safeArea}>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={colors.primary} />
 
-          <Text style={styles.loadingText}>Loading school information...</Text>
+          <Text style={styles.loadingText}>Loading school details...</Text>
         </View>
       </SafeAreaView>
     );
   }
 
-  // --------------------------------
-  // Screen
-  // --------------------------------
+  // --------------------------------------------------
+  // UI
+  // --------------------------------------------------
+
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.safeArea}>
       <KeyboardAvoidingView
-        style={styles.flex}
+        style={styles.keyboardContainer}
         behavior={Platform.OS === "ios" ? "padding" : undefined}
       >
         <ScrollView
-          contentContainerStyle={styles.scrollContent}
+          contentContainerStyle={styles.scrollContainer}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
-          <View style={styles.card}>
-            {/* Back */}
+          <View style={styles.mainCard}>
+            {/* ==========================================
+                HEADER
+            ========================================== */}
 
-            <TouchableOpacity
-              style={styles.backBtn}
-              onPress={goToSchools}
-              disabled={saving}
-              activeOpacity={0.8}
-            >
-              <Ionicons
-                name="arrow-back"
-                size={20}
-                color={colors.text.primary}
-              />
+            <View style={styles.headerRow}>
+              <TouchableOpacity
+                style={styles.backButton}
+                onPress={handleBack}
+                activeOpacity={0.8}
+              >
+                <Ionicons
+                  name="arrow-back"
+                  size={20}
+                  color={colors.text.secondary}
+                />
+              </TouchableOpacity>
 
-              <Text style={styles.backText}>Back to Schools</Text>
-            </TouchableOpacity>
+              <View style={styles.headerTextContainer}>
+                <Text style={styles.title}>Edit School</Text>
 
-            {/* Header */}
+                <View style={styles.breadcrumbRow}>
+                  <Text style={styles.breadcrumbMuted}>Dashboard</Text>
 
-            <Text style={styles.title}>Edit School</Text>
+                  <Ionicons
+                    name="chevron-forward"
+                    size={13}
+                    color={colors.text.muted}
+                    style={styles.breadcrumbIcon}
+                  />
 
-            <Text style={styles.subtitle}>
-              Update the school information below.
-            </Text>
+                  <Text style={styles.breadcrumbMuted}>Schools</Text>
 
-            {/* School Information */}
+                  <Ionicons
+                    name="chevron-forward"
+                    size={13}
+                    color={colors.text.muted}
+                    style={styles.breadcrumbIcon}
+                  />
 
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>School Information</Text>
-
-              <View style={styles.formGrid}>
-                {renderInput({
-                  label: "School Name *",
-                  field: "name",
-                  placeholder: "Enter school name",
-                  autoCapitalize: "words",
-                })}
-
-                {renderInput({
-                  label: "School Code *",
-                  field: "code",
-                  placeholder: "e.g. SCH001",
-                  autoCapitalize: "characters",
-                })}
-
-                {renderInput({
-                  label: "District *",
-                  field: "district",
-                  placeholder: "e.g. Vavuniya",
-                  autoCapitalize: "words",
-                })}
-
-                {renderInput({
-                  label: "School Type *",
-                  field: "type",
-                  placeholder: "e.g. Government",
-                  autoCapitalize: "words",
-                })}
+                  <Text style={styles.breadcrumbActive}>Edit</Text>
+                </View>
               </View>
             </View>
 
-            {/* Contact Information */}
+            {/* ==========================================
+                BASIC INFORMATION
+            ========================================== */}
+
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Basic Information</Text>
+
+              <View style={styles.formRow}>
+                <View style={styles.formGroup}>
+                  <Text style={styles.label}>School Name *</Text>
+
+                  <TextInput
+                    style={styles.input}
+                    value={name}
+                    onChangeText={setName}
+                    placeholder="Enter school name"
+                    placeholderTextColor={colors.text.placeholder}
+                  />
+                </View>
+
+                <View style={styles.formGroup}>
+                  <Text style={styles.label}>School Code *</Text>
+
+                  <TextInput
+                    style={styles.input}
+                    value={code}
+                    onChangeText={setCode}
+                    placeholder="Enter school code"
+                    placeholderTextColor={colors.text.placeholder}
+                    autoCapitalize="characters"
+                  />
+                </View>
+              </View>
+
+              <View style={styles.formRow}>
+                <View style={styles.formGroup}>
+                  <Text style={styles.label}>District *</Text>
+
+                  <TextInput
+                    style={styles.input}
+                    value={district}
+                    onChangeText={setDistrict}
+                    placeholder="Enter district"
+                    placeholderTextColor={colors.text.placeholder}
+                  />
+                </View>
+
+                <View style={styles.formGroup}>
+                  <Text style={styles.label}>School Type *</Text>
+
+                  <TextInput
+                    style={styles.input}
+                    value={type}
+                    onChangeText={setType}
+                    placeholder="e.g. National, Private"
+                    placeholderTextColor={colors.text.placeholder}
+                  />
+                </View>
+              </View>
+
+              <View style={styles.formGroupFull}>
+                <Text style={styles.label}>Address *</Text>
+
+                <TextInput
+                  style={styles.input}
+                  value={address}
+                  onChangeText={setAddress}
+                  placeholder="Enter school address"
+                  placeholderTextColor={colors.text.placeholder}
+                />
+              </View>
+            </View>
+
+            {/* ==========================================
+                CONTACT INFORMATION
+            ========================================== */}
 
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Contact Information</Text>
 
-              {renderInput({
-                label: "Address *",
-                field: "address",
-                placeholder: "Enter school address",
-                multiline: true,
-              })}
+              <View style={styles.formRow}>
+                <View style={styles.formGroup}>
+                  <Text style={styles.label}>Email *</Text>
 
-              <View style={styles.formGrid}>
-                {renderInput({
-                  label: "Email *",
-                  field: "email",
-                  placeholder: "school@example.com",
-                  keyboardType: "email-address",
-                  autoCapitalize: "none",
-                })}
+                  <TextInput
+                    style={styles.input}
+                    value={email}
+                    onChangeText={setEmail}
+                    placeholder="school@example.com"
+                    placeholderTextColor={colors.text.placeholder}
+                    keyboardType="email-address"
+                    autoCapitalize="none"
+                  />
+                </View>
 
-                {renderInput({
-                  label: "Phone *",
-                  field: "phone",
-                  placeholder: "+94 XX XXX XXXX",
-                  keyboardType: "phone-pad",
-                  autoCapitalize: "none",
-                })}
+                <View style={styles.formGroup}>
+                  <Text style={styles.label}>Phone *</Text>
+
+                  <TextInput
+                    style={styles.input}
+                    value={phone}
+                    onChangeText={setPhone}
+                    placeholder="Enter phone number"
+                    placeholderTextColor={colors.text.placeholder}
+                    keyboardType="phone-pad"
+                  />
+                </View>
               </View>
             </View>
 
-            {/* Administration */}
+            {/* ==========================================
+                ADMINISTRATION
+            ========================================== */}
 
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Administration</Text>
 
-              {renderInput({
-                label: "Principal Name *",
-                field: "principalName",
-                placeholder: "Enter principal name",
-                autoCapitalize: "words",
-              })}
+              <View style={styles.formGroupFull}>
+                <Text style={styles.label}>Principal Name *</Text>
+
+                <TextInput
+                  style={styles.input}
+                  value={principalName}
+                  onChangeText={setPrincipalName}
+                  placeholder="Enter principal name"
+                  placeholderTextColor={colors.text.placeholder}
+                />
+              </View>
             </View>
 
-            {/* Capacity */}
+            {/* ==========================================
+                SCHOOL CAPACITY
+            ========================================== */}
 
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>School Capacity</Text>
 
-              <View style={styles.formGrid}>
-                {renderInput({
-                  label: "Capacity *",
-                  field: "capacity",
-                  placeholder: "e.g. 1000",
-                  keyboardType: "numeric",
-                  autoCapitalize: "none",
-                })}
+              <View style={styles.formRow}>
+                <View style={styles.formGroup}>
+                  <Text style={styles.label}>Capacity *</Text>
 
-                {renderInput({
-                  label: "Available Seats *",
-                  field: "availableSeats",
-                  placeholder: "e.g. 50",
-                  keyboardType: "numeric",
-                  autoCapitalize: "none",
-                })}
+                  <TextInput
+                    style={styles.input}
+                    value={capacity}
+                    onChangeText={(text) => {
+                      setCapacity(text.replace(/[^0-9]/g, ""));
+                    }}
+                    placeholder="Enter capacity"
+                    placeholderTextColor={colors.text.placeholder}
+                    keyboardType="numeric"
+                  />
+                </View>
+
+                <View style={styles.formGroup}>
+                  <Text style={styles.label}>Available Seats *</Text>
+
+                  <TextInput
+                    style={styles.input}
+                    value={availableSeats}
+                    onChangeText={(text) => {
+                      setAvailableSeats(text.replace(/[^0-9]/g, ""));
+                    }}
+                    placeholder="Enter available seats"
+                    placeholderTextColor={colors.text.placeholder}
+                    keyboardType="numeric"
+                  />
+                </View>
               </View>
             </View>
 
-            {/* Additional Information */}
+            {/* ==========================================
+                ADDITIONAL INFORMATION
+            ========================================== */}
 
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Additional Information</Text>
 
-              {renderInput({
-                label: "Image URL",
-                field: "imageUrl",
-                placeholder: "https://example.com/school.jpg",
-                keyboardType: "url",
-                autoCapitalize: "none",
-              })}
+              <View style={styles.formGroupFull}>
+                <Text style={styles.label}>Image URL</Text>
 
-              {renderInput({
-                label: "Description",
-                field: "description",
-                placeholder: "Enter school description",
-                multiline: true,
-              })}
+                <TextInput
+                  style={styles.input}
+                  value={imageUrl}
+                  onChangeText={setImageUrl}
+                  placeholder="https://example.com/image.jpg"
+                  placeholderTextColor={colors.text.placeholder}
+                  autoCapitalize="none"
+                  keyboardType="url"
+                />
+              </View>
+
+              <View style={styles.formGroupFull}>
+                <Text style={styles.label}>Description</Text>
+
+                <TextInput
+                  style={[styles.input, styles.descriptionInput]}
+                  value={description}
+                  onChangeText={setDescription}
+                  placeholder="Enter school description"
+                  placeholderTextColor={colors.text.placeholder}
+                  multiline
+                  textAlignVertical="top"
+                />
+              </View>
             </View>
 
-            {/* Actions */}
+            {/* ==========================================
+                BUTTONS
+            ========================================== */}
 
-            <View style={styles.actions}>
-              {/* Cancel */}
+            <View style={styles.buttonDivider} />
 
+            <View style={styles.buttonsRow}>
               <TouchableOpacity
                 style={styles.cancelButton}
-                onPress={goToSchools}
+                onPress={handleBack}
                 disabled={saving}
                 activeOpacity={0.8}
               >
                 <Text style={styles.cancelButtonText}>Cancel</Text>
               </TouchableOpacity>
 
-              {/* Update School */}
-
               <TouchableOpacity
-                style={[styles.saveButton, saving && styles.saveButtonDisabled]}
+                style={[
+                  styles.updateButton,
+                  saving && styles.updateButtonDisabled,
+                ]}
                 onPress={handleSubmit}
                 disabled={saving}
-                activeOpacity={0.7}
+                activeOpacity={0.8}
               >
                 {saving ? (
                   <>
                     <ActivityIndicator size="small" color="#FFFFFF" />
 
-                    <Text style={styles.saveButtonText}>Updating...</Text>
+                    <Text style={styles.updateButtonText}>Updating...</Text>
                   </>
                 ) : (
                   <>
-                    <Ionicons name="save-outline" size={18} color="#FFFFFF" />
+                    <Ionicons name="save-outline" size={17} color="#FFFFFF" />
 
-                    <Text style={styles.saveButtonText}>Update School</Text>
+                    <Text style={styles.updateButtonText}>Update School</Text>
                   </>
                 )}
               </TouchableOpacity>
@@ -610,158 +604,218 @@ export default function EditSchoolScreen() {
   );
 }
 
-// --------------------------------
-// Styles
-// --------------------------------
+// ======================================================
+// STYLES
+// ======================================================
 
 const styles = StyleSheet.create({
-  flex: {
-    flex: 1,
-  },
-
-  container: {
+  safeArea: {
     flex: 1,
     backgroundColor: colors.background,
   },
 
-  scrollContent: {
+  keyboardContainer: {
+    flex: 1,
+  },
+
+  scrollContainer: {
     padding: 24,
     flexGrow: 1,
   },
 
-  card: {
+  mainCard: {
+    width: "100%",
+    maxWidth: 1000,
+    alignSelf: "center",
     backgroundColor: colors.cardBg,
     borderRadius: 16,
-    padding: 28,
     borderWidth: 1,
     borderColor: colors.border,
-    width: "100%",
-    maxWidth: 1100,
-    alignSelf: "center",
+    padding: 24,
+
+    ...Platform.select({
+      ios: {
+        shadowColor: "#000",
+        shadowOffset: {
+          width: 0,
+          height: 2,
+        },
+        shadowOpacity: 0.04,
+        shadowRadius: 8,
+      },
+
+      android: {
+        elevation: 2,
+      },
+
+      web: {
+        boxShadow: "0 4px 16px rgba(0,0,0,0.03)",
+      },
+    }),
   },
 
-  backBtn: {
+  // Header
+
+  headerRow: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 18,
-    gap: 8,
-    alignSelf: "flex-start",
+    marginBottom: 28,
   },
 
-  backText: {
-    fontSize: 14,
-    color: colors.text.secondary,
-    fontWeight: "500",
+  backButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: "#FFFFFF",
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 12,
+  },
+
+  headerTextContainer: {
+    flex: 1,
   },
 
   title: {
     fontSize: 26,
     fontWeight: "700",
     color: colors.text.primary,
+    letterSpacing: -0.5,
   },
 
-  subtitle: {
-    fontSize: 14,
+  breadcrumbRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 4,
+  },
+
+  breadcrumbMuted: {
+    fontSize: 13,
     color: colors.text.muted,
-    marginTop: 5,
+  },
+
+  breadcrumbActive: {
+    fontSize: 13,
+    color: colors.primary,
+    fontWeight: "500",
+  },
+
+  breadcrumbIcon: {
+    marginHorizontal: 4,
+  },
+
+  // Sections
+
+  section: {
     marginBottom: 28,
   },
 
-  section: {
-    marginBottom: 26,
-  },
-
   sectionTitle: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: "700",
     color: colors.text.primary,
-    marginBottom: 16,
-  },
-
-  formGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 16,
-  },
-
-  inputGroup: {
-    flex: 1,
-    minWidth: 260,
     marginBottom: 14,
   },
 
+  // Forms
+
+  formRow: {
+    flexDirection: "row",
+    gap: 12,
+    marginBottom: 16,
+  },
+
+  formGroup: {
+    flex: 1,
+  },
+
+  formGroupFull: {
+    width: "100%",
+    marginBottom: 16,
+  },
+
   label: {
-    fontSize: 13,
-    fontWeight: "600",
+    fontSize: 12,
+    fontWeight: "500",
     color: colors.text.primary,
     marginBottom: 7,
   },
 
   input: {
     width: "100%",
-    height: 46,
+    height: 38,
     borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: 9,
+    borderRadius: 8,
     backgroundColor: "#FFFFFF",
-    paddingHorizontal: 14,
-    fontSize: 14,
+    paddingHorizontal: 12,
+    fontSize: 13,
     color: colors.text.primary,
   },
 
-  textArea: {
-    minHeight: 100,
-    paddingTop: 12,
-    paddingBottom: 12,
+  descriptionInput: {
+    height: 80,
+    paddingTop: 10,
+    paddingBottom: 10,
   },
 
-  actions: {
+  // Buttons
+
+  buttonDivider: {
+    height: 1,
+    backgroundColor: colors.borderLight,
+    marginBottom: 8,
+  },
+
+  buttonsRow: {
     flexDirection: "row",
     justifyContent: "flex-end",
-    gap: 12,
-    paddingTop: 8,
-    borderTopWidth: 1,
-    borderTopColor: colors.borderLight,
+    alignItems: "center",
+    gap: 10,
+    paddingTop: 0,
   },
 
   cancelButton: {
-    height: 44,
-    paddingHorizontal: 22,
+    height: 36,
+    paddingHorizontal: 18,
     borderRadius: 8,
     borderWidth: 1,
     borderColor: colors.border,
+    backgroundColor: "#FFFFFF",
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#FFFFFF",
   },
 
   cancelButtonText: {
-    fontSize: 14,
-    fontWeight: "600",
+    fontSize: 13,
+    fontWeight: "500",
     color: colors.text.secondary,
   },
 
-  saveButton: {
-    height: 44,
-    paddingHorizontal: 22,
+  updateButton: {
+    height: 36,
+    paddingHorizontal: 18,
     borderRadius: 8,
     backgroundColor: colors.primary,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: 8,
-    minWidth: 150,
+    gap: 7,
   },
 
-  saveButtonDisabled: {
-    opacity: 0.6,
+  updateButtonDisabled: {
+    opacity: 0.65,
   },
 
-  saveButtonText: {
-    fontSize: 14,
+  updateButtonText: {
+    fontSize: 13,
     fontWeight: "600",
     color: "#FFFFFF",
   },
+
+  // Loading
 
   loadingContainer: {
     flex: 1,
@@ -772,6 +826,6 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 12,
     fontSize: 14,
-    color: colors.text.secondary,
+    color: colors.text.muted,
   },
 });

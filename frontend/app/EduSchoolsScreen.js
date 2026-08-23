@@ -1,8 +1,8 @@
 // app/EduSchoolsScreen.js
 
 import { Ionicons } from "@expo/vector-icons";
-import { router } from "expo-router";
-import { useEffect, useMemo, useState } from "react";
+import { router, useFocusEffect } from "expo-router";
+import { useCallback, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Modal,
@@ -28,7 +28,10 @@ export default function EduSchoolsScreen() {
   const { width } = useWindowDimensions();
   const isDesktop = width >= 768;
 
-  // States
+  // =========================================================
+  // STATES
+  // =========================================================
+
   const [schools, setSchools] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -42,74 +45,109 @@ export default function EduSchoolsScreen() {
   const itemsPerPage = 7;
   const [currentPage, setCurrentPage] = useState(1);
 
-  // Delete Modal
+  // Delete
   const [deleteModalVisible, setDeleteModalVisible] = useState(false);
   const [schoolToDelete, setSchoolToDelete] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  // Fetch schools
-  useEffect(() => {
-    fetchSchoolsData();
-  }, []);
+  // =========================================================
+  // FETCH SCHOOLS
+  // =========================================================
 
-  const fetchSchoolsData = async () => {
+  const fetchSchoolsData = useCallback(async () => {
     setLoading(true);
     setError(null);
 
     try {
       const data = await getSchools();
 
+      console.log("Schools loaded:", data);
+
       if (Array.isArray(data)) {
         setSchools(data);
       } else {
         setSchools([]);
       }
+
+      // Always start from page 1 after refreshing
+      setCurrentPage(1);
     } catch (err) {
       console.error("Error fetching schools:", err);
 
       setSchools([]);
-      setError(err?.message || "Unable to load schools from the database.");
+
+      setError(
+        err?.response?.data?.message ||
+          err?.message ||
+          "Unable to load schools from the database.",
+      );
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  // Filter & Search
+  // =========================================================
+  // REFRESH WHEN SCREEN GETS FOCUS
+  // =========================================================
+
+  useFocusEffect(
+    useCallback(() => {
+      fetchSchoolsData();
+    }, [fetchSchoolsData]),
+  );
+
+  // =========================================================
+  // SEARCH & FILTER
+  // =========================================================
+
   const filteredSchools = useMemo(() => {
     return schools.filter((school) => {
       const query = searchQuery.trim().toLowerCase();
 
+      const schoolName = String(school?.name || "").toLowerCase();
+      const district = String(school?.district || "").toLowerCase();
+      const code = String(school?.code || "").toLowerCase();
+
       const matchesSearch =
         !query ||
-        school.name?.toLowerCase().includes(query) ||
-        school.district?.toLowerCase().includes(query) ||
-        school.code?.toLowerCase().includes(query);
+        schoolName.includes(query) ||
+        district.includes(query) ||
+        code.includes(query);
 
       if (!matchesSearch) {
         return false;
       }
 
       if (filterType === "Active") {
-        return school.active === true || school.status === "Active";
+        return (
+          school?.active === true ||
+          String(school?.status || "").toLowerCase() === "active"
+        );
       }
 
       if (filterType === "Inactive") {
-        return school.active === false || school.status === "Inactive";
+        return (
+          school?.active === false ||
+          String(school?.status || "").toLowerCase() === "inactive"
+        );
       }
 
       if (filterType === "National") {
-        return school.type?.toLowerCase() === "national";
+        return String(school?.type || "").toLowerCase() === "national";
       }
 
       if (filterType === "Private") {
-        return school.type?.toLowerCase() === "private";
+        return String(school?.type || "").toLowerCase() === "private";
       }
 
       return true;
     });
   }, [schools, searchQuery, filterType]);
 
-  // Pagination
+  // =========================================================
+  // PAGINATION
+  // =========================================================
+
   const totalPages = Math.max(
     1,
     Math.ceil(filteredSchools.length / itemsPerPage),
@@ -121,32 +159,45 @@ export default function EduSchoolsScreen() {
     return filteredSchools.slice(startIndex, startIndex + itemsPerPage);
   }, [filteredSchools, currentPage]);
 
-  useEffect(() => {
-    if (currentPage > totalPages) {
-      setCurrentPage(1);
-    }
-  }, [totalPages, currentPage]);
+  // Keep current page valid
+  if (currentPage > totalPages) {
+    setCurrentPage(1);
+  }
 
-  // Action handlers
+  // =========================================================
+  // ACTION HANDLERS
+  // =========================================================
 
   const handleBack = () => {
     router.back();
   };
 
   const handleView = (school) => {
+    if (!school?.id) {
+      console.error("School ID is missing:", school);
+      return;
+    }
+
     router.push({
       pathname: "/EduSchoolDetailsScreen",
       params: {
-        id: school.id,
+        id: String(school.id),
       },
     });
   };
 
   const handleEdit = (school) => {
+    if (!school?.id) {
+      console.error("School ID is missing:", school);
+      return;
+    }
+
+    console.log("Editing school ID:", school.id);
+
     router.push({
       pathname: "/EditSchoolScreen",
       params: {
-        id: school.id,
+        id: String(school.id),
       },
     });
   };
@@ -155,43 +206,77 @@ export default function EduSchoolsScreen() {
     router.push("/AddSchoolScreen");
   };
 
+  // =========================================================
+  // DELETE
+  // =========================================================
+
   const promptDeleteSchool = (school) => {
+    if (!school?.id) {
+      console.error("Cannot delete school without ID:", school);
+      return;
+    }
+
     setSchoolToDelete(school);
     setDeleteModalVisible(true);
   };
 
+  const closeDeleteModal = () => {
+    if (isDeleting) {
+      return;
+    }
+
+    setDeleteModalVisible(false);
+    setSchoolToDelete(null);
+  };
+
   const confirmDelete = async () => {
-    if (!schoolToDelete) {
+    if (!schoolToDelete?.id) {
       return;
     }
 
     setIsDeleting(true);
+    setError(null);
 
     try {
-      await apiDeleteSchool(schoolToDelete.id);
+      console.log("Deleting school:", schoolToDelete.id);
 
+      await apiDeleteSchool(String(schoolToDelete.id));
+
+      // Remove immediately from UI
       setSchools((prev) =>
-        prev.filter((school) => school.id !== schoolToDelete.id),
+        prev.filter(
+          (school) => String(school?.id) !== String(schoolToDelete.id),
+        ),
       );
 
       setDeleteModalVisible(false);
       setSchoolToDelete(null);
+
+      // Refresh from backend
+      await fetchSchoolsData();
     } catch (err) {
       console.error("Delete school error:", err);
 
-      setError(err?.message || "Unable to delete school.");
+      setError(
+        err?.response?.data?.message ||
+          err?.message ||
+          "Unable to delete school.",
+      );
     } finally {
       setIsDeleting(false);
     }
   };
 
-  // Status helper
+  // =========================================================
+  // STATUS
+  // =========================================================
+
   const isSchoolActive = (school) => {
-    if (typeof school.active === "boolean") {
+    if (typeof school?.active === "boolean") {
       return school.active;
     }
 
-    return school.status === "Active";
+    return String(school?.status || "").toLowerCase() === "active";
   };
 
   const renderStatusBadge = (school) => {
@@ -224,6 +309,10 @@ export default function EduSchoolsScreen() {
     );
   };
 
+  // =========================================================
+  // RENDER
+  // =========================================================
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <ScrollView
@@ -231,12 +320,12 @@ export default function EduSchoolsScreen() {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.mainCard}>
-          {/* Header */}
+          {/* =================================================
+              HEADER
+          ================================================= */}
 
           <View style={styles.headerRow}>
             <View style={styles.headerLeftSection}>
-              {/* Back Button */}
-
               <TouchableOpacity
                 style={styles.backButton}
                 onPress={handleBack}
@@ -283,7 +372,9 @@ export default function EduSchoolsScreen() {
             </TouchableOpacity>
           </View>
 
-          {/* Search & Filter */}
+          {/* =================================================
+              SEARCH & FILTER
+          ================================================= */}
 
           <View style={styles.controlsRow}>
             <View style={styles.searchBarContainer}>
@@ -307,7 +398,10 @@ export default function EduSchoolsScreen() {
 
               {searchQuery.length > 0 && (
                 <TouchableOpacity
-                  onPress={() => setSearchQuery("")}
+                  onPress={() => {
+                    setSearchQuery("");
+                    setCurrentPage(1);
+                  }}
                   style={styles.clearSearchBtn}
                 >
                   <Ionicons
@@ -325,7 +419,7 @@ export default function EduSchoolsScreen() {
                   styles.filterBtn,
                   filterType !== "All" && styles.filterBtnActive,
                 ]}
-                onPress={() => setIsFilterDropdownOpen(!isFilterDropdownOpen)}
+                onPress={() => setIsFilterDropdownOpen((previous) => !previous)}
                 activeOpacity={0.8}
               >
                 <Ionicons
@@ -397,7 +491,9 @@ export default function EduSchoolsScreen() {
             </View>
           </View>
 
-          {/* Loading */}
+          {/* =================================================
+              LOADING
+          ================================================= */}
 
           {loading && (
             <View style={styles.stateContainer}>
@@ -407,7 +503,9 @@ export default function EduSchoolsScreen() {
             </View>
           )}
 
-          {/* Error */}
+          {/* =================================================
+              ERROR
+          ================================================= */}
 
           {!loading && error && (
             <View style={styles.stateContainer}>
@@ -429,7 +527,9 @@ export default function EduSchoolsScreen() {
             </View>
           )}
 
-          {/* Empty */}
+          {/* =================================================
+              EMPTY
+          ================================================= */}
 
           {!loading && !error && displayedSchools.length === 0 && (
             <View style={styles.stateContainer}>
@@ -449,12 +549,16 @@ export default function EduSchoolsScreen() {
             </View>
           )}
 
-          {/* School Data */}
+          {/* =================================================
+              SCHOOL DATA
+          ================================================= */}
 
           {!loading && !error && displayedSchools.length > 0 && (
             <>
               {isDesktop ? (
                 <View style={styles.tableContainer}>
+                  {/* Table Header */}
+
                   <View style={styles.tableHeaderRow}>
                     <Text style={[styles.thCell, styles.colIndex]}>#</Text>
 
@@ -477,12 +581,17 @@ export default function EduSchoolsScreen() {
                     </Text>
                   </View>
 
+                  {/* Table Rows */}
+
                   {displayedSchools.map((school, index) => {
                     const rowNumber =
                       (currentPage - 1) * itemsPerPage + index + 1;
 
                     return (
-                      <View key={school.id || index} style={styles.tableRow}>
+                      <View
+                        key={school?.id || `school-${index}`}
+                        style={styles.tableRow}
+                      >
                         <Text
                           style={[
                             styles.tdCell,
@@ -499,8 +608,9 @@ export default function EduSchoolsScreen() {
                             styles.colName,
                             styles.schoolNameText,
                           ]}
+                          numberOfLines={1}
                         >
-                          {school.name}
+                          {school?.name || "N/A"}
                         </Text>
 
                         <Text
@@ -509,8 +619,9 @@ export default function EduSchoolsScreen() {
                             styles.colDistrict,
                             styles.secondaryText,
                           ]}
+                          numberOfLines={1}
                         >
-                          {school.district}
+                          {school?.district || "N/A"}
                         </Text>
 
                         <Text
@@ -519,8 +630,9 @@ export default function EduSchoolsScreen() {
                             styles.colType,
                             styles.secondaryText,
                           ]}
+                          numberOfLines={1}
                         >
-                          {school.type}
+                          {school?.type || "N/A"}
                         </Text>
 
                         <View style={[styles.colStatus, styles.statusCell]}>
@@ -528,9 +640,12 @@ export default function EduSchoolsScreen() {
                         </View>
 
                         <View style={[styles.colActions, styles.actionsRow]}>
+                          {/* View */}
+
                           <TouchableOpacity
                             style={styles.actionIconBtn}
                             onPress={() => handleView(school)}
+                            activeOpacity={0.7}
                           >
                             <Ionicons
                               name="eye-outline"
@@ -539,9 +654,12 @@ export default function EduSchoolsScreen() {
                             />
                           </TouchableOpacity>
 
+                          {/* Edit */}
+
                           <TouchableOpacity
                             style={styles.actionIconBtn}
                             onPress={() => handleEdit(school)}
+                            activeOpacity={0.7}
                           >
                             <Ionicons
                               name="create-outline"
@@ -550,9 +668,12 @@ export default function EduSchoolsScreen() {
                             />
                           </TouchableOpacity>
 
+                          {/* Delete */}
+
                           <TouchableOpacity
                             style={styles.actionIconBtn}
                             onPress={() => promptDeleteSchool(school)}
+                            activeOpacity={0.7}
                           >
                             <Ionicons
                               name="trash-outline"
@@ -566,13 +687,20 @@ export default function EduSchoolsScreen() {
                   })}
                 </View>
               ) : (
+                // =================================================
+                // MOBILE
+                // =================================================
+
                 <View style={styles.mobileCardsList}>
                   {displayedSchools.map((school, index) => {
                     const rowNumber =
                       (currentPage - 1) * itemsPerPage + index + 1;
 
                     return (
-                      <View key={school.id || index} style={styles.mobileCard}>
+                      <View
+                        key={school?.id || `mobile-school-${index}`}
+                        style={styles.mobileCard}
+                      >
                         <View style={styles.mobileCardHeader}>
                           <View style={styles.mobileCardTitleGroup}>
                             <View style={styles.mobileIndexBadge}>
@@ -581,15 +709,21 @@ export default function EduSchoolsScreen() {
                               </Text>
                             </View>
 
-                            <Text style={styles.mobileSchoolName}>
-                              {school.name}
+                            <Text
+                              style={styles.mobileSchoolName}
+                              numberOfLines={2}
+                            >
+                              {school?.name || "Unnamed School"}
                             </Text>
                           </View>
 
                           <View style={styles.mobileCardActions}>
+                            {/* View */}
+
                             <TouchableOpacity
                               style={styles.mobileActionBtn}
                               onPress={() => handleView(school)}
+                              activeOpacity={0.7}
                             >
                               <Ionicons
                                 name="eye-outline"
@@ -598,9 +732,12 @@ export default function EduSchoolsScreen() {
                               />
                             </TouchableOpacity>
 
+                            {/* Edit */}
+
                             <TouchableOpacity
                               style={styles.mobileActionBtn}
                               onPress={() => handleEdit(school)}
+                              activeOpacity={0.7}
                             >
                               <Ionicons
                                 name="create-outline"
@@ -609,9 +746,12 @@ export default function EduSchoolsScreen() {
                               />
                             </TouchableOpacity>
 
+                            {/* Delete */}
+
                             <TouchableOpacity
                               style={styles.mobileActionBtn}
                               onPress={() => promptDeleteSchool(school)}
+                              activeOpacity={0.7}
                             >
                               <Ionicons
                                 name="trash-outline"
@@ -632,8 +772,11 @@ export default function EduSchoolsScreen() {
                               color={colors.text.muted}
                             />
 
-                            <Text style={styles.mobileMetaText}>
-                              {school.district}
+                            <Text
+                              style={styles.mobileMetaText}
+                              numberOfLines={1}
+                            >
+                              {school?.district || "N/A"}
                             </Text>
                           </View>
 
@@ -645,7 +788,7 @@ export default function EduSchoolsScreen() {
                             />
 
                             <Text style={styles.mobileMetaText}>
-                              {school.type}
+                              {school?.type || "N/A"}
                             </Text>
                           </View>
 
@@ -659,28 +802,33 @@ export default function EduSchoolsScreen() {
                 </View>
               )}
 
-              {/* Pagination */}
+              {/* =================================================
+                    PAGINATION
+                ================================================= */}
 
               <View style={styles.paginationContainer}>
                 <Text style={styles.paginationSummary}>
                   Showing{" "}
-                  {Math.min(
-                    (currentPage - 1) * itemsPerPage + 1,
-                    filteredSchools.length,
-                  )}{" "}
+                  {filteredSchools.length === 0
+                    ? 0
+                    : (currentPage - 1) * itemsPerPage + 1}{" "}
                   to{" "}
                   {Math.min(currentPage * itemsPerPage, filteredSchools.length)}{" "}
                   of {filteredSchools.length.toLocaleString()} schools
                 </Text>
 
                 <View style={styles.paginationButtonsRow}>
+                  {/* Previous */}
+
                   <TouchableOpacity
                     style={[
                       styles.pageNavBtn,
                       currentPage === 1 && styles.pageNavBtnDisabled,
                     ]}
                     disabled={currentPage === 1}
-                    onPress={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                    onPress={() =>
+                      setCurrentPage((page) => Math.max(1, page - 1))
+                    }
                   >
                     <Ionicons
                       name="chevron-back"
@@ -692,6 +840,8 @@ export default function EduSchoolsScreen() {
                       }
                     />
                   </TouchableOpacity>
+
+                  {/* Pages */}
 
                   {Array.from({ length: totalPages }, (_, index) => index + 1)
                     .slice(0, Math.min(totalPages, 3))
@@ -739,11 +889,16 @@ export default function EduSchoolsScreen() {
                     </>
                   )}
 
+                  {/* Next */}
+
                   <TouchableOpacity
-                    style={styles.pageNavBtn}
+                    style={[
+                      styles.pageNavBtn,
+                      currentPage === totalPages && styles.pageNavBtnDisabled,
+                    ]}
                     disabled={currentPage === totalPages}
                     onPress={() =>
-                      setCurrentPage((p) => Math.min(totalPages, p + 1))
+                      setCurrentPage((page) => Math.min(totalPages, page + 1))
                     }
                   >
                     <Ionicons
@@ -763,13 +918,15 @@ export default function EduSchoolsScreen() {
         </View>
       </ScrollView>
 
-      {/* Delete Confirmation Modal */}
+      {/* =====================================================
+          DELETE CONFIRMATION MODAL
+      ===================================================== */}
 
       <Modal
         visible={deleteModalVisible}
         transparent
         animationType="fade"
-        onRequestClose={() => setDeleteModalVisible(false)}
+        onRequestClose={closeDeleteModal}
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalCard}>
@@ -790,8 +947,9 @@ export default function EduSchoolsScreen() {
             <View style={styles.modalButtonsRow}>
               <TouchableOpacity
                 style={styles.modalCancelBtn}
-                onPress={() => setDeleteModalVisible(false)}
+                onPress={closeDeleteModal}
                 disabled={isDeleting}
+                activeOpacity={0.8}
               >
                 <Text style={styles.modalCancelBtnText}>Cancel</Text>
               </TouchableOpacity>
@@ -800,6 +958,7 @@ export default function EduSchoolsScreen() {
                 style={styles.modalDeleteBtn}
                 onPress={confirmDelete}
                 disabled={isDeleting}
+                activeOpacity={0.8}
               >
                 {isDeleting ? (
                   <ActivityIndicator size="small" color="#FFFFFF" />
@@ -814,6 +973,10 @@ export default function EduSchoolsScreen() {
     </SafeAreaView>
   );
 }
+
+// =========================================================
+// STYLES
+// =========================================================
 
 const styles = StyleSheet.create({
   safeArea: {
@@ -854,7 +1017,9 @@ const styles = StyleSheet.create({
     }),
   },
 
-  // Header
+  // =========================================================
+  // HEADER
+  // =========================================================
 
   headerRow: {
     flexDirection: "row",
@@ -935,7 +1100,9 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
 
-  // Controls
+  // =========================================================
+  // CONTROLS
+  // =========================================================
 
   controlsRow: {
     flexDirection: "row",
@@ -1060,7 +1227,9 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
 
-  // Table
+  // =========================================================
+  // TABLE
+  // =========================================================
 
   tableContainer: {
     width: "100%",
@@ -1165,7 +1334,9 @@ const styles = StyleSheet.create({
     padding: 4,
   },
 
-  // Mobile
+  // =========================================================
+  // MOBILE
+  // =========================================================
 
   mobileCardsList: {
     gap: 12,
@@ -1252,7 +1423,9 @@ const styles = StyleSheet.create({
     marginLeft: "auto",
   },
 
-  // Pagination
+  // =========================================================
+  // PAGINATION
+  // =========================================================
 
   paginationContainer: {
     flexDirection: "row",
@@ -1321,7 +1494,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 4,
   },
 
-  // States
+  // =========================================================
+  // STATES
+  // =========================================================
 
   stateContainer: {
     paddingVertical: 48,
@@ -1380,7 +1555,9 @@ const styles = StyleSheet.create({
     maxWidth: 320,
   },
 
-  // Modal
+  // =========================================================
+  // MODAL
+  // =========================================================
 
   modalOverlay: {
     flex: 1,
