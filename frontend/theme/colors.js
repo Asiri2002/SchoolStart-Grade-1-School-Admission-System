@@ -78,3 +78,46 @@ export const getStatusColor = (status) =>
   COLORS.statusColor[status] ?? COLORS.textSecondary;
 
 export const getStatusBg = (status) => COLORS.statusBg[status] ?? COLORS.border;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Legacy / screen-specific colors
+// Keeps compatibility with existing Education Admin screens
+// ─────────────────────────────────────────────────────────────────────────────
+
+export const colors = {
+  primary: "#5447E6",
+  primaryHover: "#4336D6",
+  primaryLight: "#EEF0FD",
+
+  background: "#F8F9FD",
+  cardBg: "#FFFFFF",
+
+  text: {
+    primary: "#1E293B",
+    secondary: "#475569",
+    muted: "#64748B",
+    placeholder: "#94A3B8",
+  },
+
+  border: "#E8ECF2",
+  borderLight: "#F1F5F9",
+
+  status: {
+    activeBg: "#ECFDF3",
+    activeText: "#12B76A",
+
+    inactiveBg: "#FEF3F2",
+    inactiveText: "#F04438",
+  },
+
+  actions: {
+    view: "#64748B",
+    edit: "#64748B",
+    delete: "#F04438",
+  },
+
+  danger: "#DC2626",
+  dangerBg: "#FEE2E2",
+};
+
+export default colors;

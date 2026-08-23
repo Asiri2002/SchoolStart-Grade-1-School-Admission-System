@@ -1,15 +1,15 @@
 import { useEffect, useState } from "react";
 
 import {
-    ActivityIndicator,
-    Alert,
-    RefreshControl,
-    SafeAreaView,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Alert,
+  RefreshControl,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 
 import { Ionicons } from "@expo/vector-icons";
@@ -34,14 +34,7 @@ export default function EducationAdminDashboardScreen() {
 
       console.log("Education Admin token exists:", !!token);
 
-      /*
-       * IMPORTANT:
-       * This endpoint must exist in your Spring Boot backend.
-       *
-       * Example:
-       * GET /api/education-admin/dashboard
-       */
-      const response = await apiClient.get("/education-admin/dashboard");
+      const response = await apiClient.get("/education-admin/profile");
 
       console.log("Education Admin dashboard:", response.data);
 
@@ -232,7 +225,7 @@ export default function EducationAdminDashboardScreen() {
           <TouchableOpacity
             style={styles.menuCard}
             activeOpacity={0.8}
-            onPress={() => router.push("/SchoolsScreen")}
+            onPress={() => router.push("/EduSchoolsScreen")}
           >
             <View style={[styles.menuIcon, { backgroundColor: "#EFF6FF" }]}>
               <Ionicons name="business-outline" size={28} color="#2563EB" />

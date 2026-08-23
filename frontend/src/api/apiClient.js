@@ -20,7 +20,6 @@ apiClient.interceptors.request.use(
         config.headers.Authorization = `Bearer ${token}`;
       }
 
-      // Do not force application/json for FormData requests.
       if (config.data instanceof FormData) {
         delete config.headers["Content-Type"];
         delete config.headers["content-type"];
@@ -31,7 +30,6 @@ apiClient.interceptors.request.use(
       return config;
     } catch (error) {
       console.error("Failed to retrieve access token:", error);
-
       return config;
     }
   },
@@ -53,5 +51,31 @@ apiClient.interceptors.response.use(
     return Promise.reject(error);
   },
 );
+
+// API functions
+export const get = async (endpoint, config = {}) => {
+  const response = await apiClient.get(endpoint, config);
+  return response.data;
+};
+
+export const post = async (endpoint, data = {}, config = {}) => {
+  const response = await apiClient.post(endpoint, data, config);
+  return response.data;
+};
+
+export const put = async (endpoint, data = {}, config = {}) => {
+  const response = await apiClient.put(endpoint, data, config);
+  return response.data;
+};
+
+export const patch = async (endpoint, data = {}, config = {}) => {
+  const response = await apiClient.patch(endpoint, data, config);
+  return response.data;
+};
+
+export const del = async (endpoint, config = {}) => {
+  const response = await apiClient.delete(endpoint, config);
+  return response.data;
+};
 
 export default apiClient;
