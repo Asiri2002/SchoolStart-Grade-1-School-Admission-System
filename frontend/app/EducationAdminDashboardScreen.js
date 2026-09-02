@@ -246,7 +246,7 @@ export default function EducationAdminDashboardScreen() {
           <TouchableOpacity
             style={styles.menuCard}
             activeOpacity={0.8}
-            onPress={() => router.push("/SchoolAdminsScreen")}
+            onPress={() => router.push("/EduSchoolAdminsScreen")}
           >
             <View style={[styles.menuIcon, { backgroundColor: "#F0FDF4" }]}>
               <Ionicons name="people-outline" size={28} color="#16A34A" />
