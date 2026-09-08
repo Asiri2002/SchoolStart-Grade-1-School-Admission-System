@@ -5,10 +5,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import schoolstart.backend.dto.ApplicationResponse;
 import schoolstart.backend.entity.ApplicationStatus;
 import schoolstart.backend.security.UserPrincipal;
@@ -48,8 +45,35 @@ public class SchoolAdminApplicationController {
                 )
         );
     }
+    @GetMapping("/{applicationId}")
+    public ResponseEntity<ApplicationResponse> getApplicationDetails(
+            @AuthenticationPrincipal UserPrincipal userPrincipal,
+            @PathVariable String applicationId
+    ) {
 
+        return ResponseEntity.ok(
+                applicationService.getApplicationDetails(
+                        userPrincipal.getId(),
+                        applicationId
+                )
+        );
+    }
 
+    @PutMapping("/{applicationId}/status")
+    public ResponseEntity<ApplicationResponse> updateApplicationStatus(
+            @AuthenticationPrincipal UserPrincipal userPrincipal,
+            @PathVariable String applicationId,
+            @RequestParam ApplicationStatus status
+    ) {
+
+        return ResponseEntity.ok(
+                applicationService.updateApplicationStatus(
+                        userPrincipal.getId(),
+                        applicationId,
+                        status
+                )
+        );
+    }
 
 
 }

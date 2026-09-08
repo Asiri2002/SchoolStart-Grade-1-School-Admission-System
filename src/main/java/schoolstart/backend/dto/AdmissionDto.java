@@ -23,6 +23,7 @@ public class AdmissionDto {
     private String studentName;
 
     // School Details
+    private String schoolId;
     private String schoolName;
 
     private LocalDateTime admissionDate;

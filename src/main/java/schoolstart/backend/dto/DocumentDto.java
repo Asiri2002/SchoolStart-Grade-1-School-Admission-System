@@ -19,4 +19,5 @@ public class DocumentDto {
     private String url;
     private LocalDateTime uploadDate;
     private String status;
+    private String rejectionReason;
 }
